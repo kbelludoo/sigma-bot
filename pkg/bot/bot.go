@@ -38,8 +38,9 @@ type Bot struct {
 	lastTravelTime  time.Time
 	lastSpinTime    time.Time
 	lastTargetTime  time.Time
-	lastBallBuyTime time.Time
-	totalBalls      int
+	lastBallBuyTime   time.Time
+	lastGuildBossTime time.Time
+	totalBalls        int
 
 	initialGold int
 	initialXP   int
@@ -377,6 +378,26 @@ func (b *Bot) updateSnapshot(snap *GameStateData) {
 		b.status.LeaderShiny = leader.Shiny
 	}
 
+	// Garante que o Pokémon de maior nível da equipe seja sempre o Líder ativo
+	if len(snap.Team) > 1 && b.socket != nil {
+		var best *TeamPokemonData
+		for i := range snap.Team {
+			p := &snap.Team[i]
+			if best == nil || p.Level > best.Level {
+				best = p
+			}
+		}
+		if best != nil && snap.Leader != nil && best.PokemonID != snap.Leader.PokemonID && best.Level > snap.Leader.Level {
+			log.Printf("[%s] 🚀 [AUTO-LÍDER] Promovendo %s (Nv. %d) para Líder (substituindo %s Nv. %d)...",
+				b.config.ID, b.catalog.GetSpeciesName(best.SpeciesID), best.Level,
+				b.catalog.GetSpeciesName(snap.Leader.SpeciesID), snap.Leader.Level)
+			_ = b.socket.SendIntent(map[string]any{
+				"type":      "setLeader",
+				"pokemonId": best.PokemonID,
+			})
+		}
+	}
+
 	// Dados de caça e mapa
 	if snap.Hunt != nil {
 		b.status.MapSlug = snap.Hunt.MapSlug
@@ -563,6 +584,14 @@ func (b *Bot) tickAutomation(sock *client.SocketClient) {
 			"ballId": 1,
 			"count":  20,
 		})
+	}
+
+	// 8. Auto-participação no Guild Boss semanal e resgate de prêmios (a cada 2 minutos)
+	if time.Since(b.lastGuildBossTime) > 2*time.Minute {
+		b.lastGuildBossTime = time.Now()
+		_ = sock.SendIntent(SimpleIntent{Type: "enterGuildBoss"})
+		_ = sock.SendIntent(SimpleIntent{Type: "claimGuildBossReward"})
+		_ = sock.SendIntent(SimpleIntent{Type: "claimGuildBossPrize"})
 	}
 }
 
