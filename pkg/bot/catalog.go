@@ -264,8 +264,22 @@ func (c *Catalog) GetOptimalHuntForLeader(level int, leaderSpeciesID int) (strin
 			continue
 		}
 
-		// Fórmula tática: XP base ponderado pelo quadrado da efetividade ofensiva, dividido pelo risco
-		tacticalScore := float64(xp) * (avgOff * avgOff) / avgRisk
+		dmgMult := h.Card.DamageMultiplier
+		if dmgMult <= 0.0 {
+			dmgMult = 1.0
+		}
+
+		offFactor := avgOff
+		if avgOff < 1.0 {
+			offFactor = avgOff * 0.25 // Pesada penalidade por causar dano reduzido (lento)
+		} else if avgOff >= 2.0 {
+			offFactor = avgOff * 1.5 // Bônus por matar super rápido
+		}
+
+		effectiveRisk := avgRisk * (0.6 + 0.4*dmgMult)
+
+		// Fórmula tática equilibrada: Prioriza XP real e rapidez de abates, evitando desvantagens ofensivas
+		tacticalScore := (float64(xp) * offFactor) / effectiveRisk
 
 		if tacticalScore > best.score {
 			best = ScoredHunt{
