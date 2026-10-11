@@ -54,8 +54,10 @@ type AccountStatus struct {
 	Captures         int    `json:"captures"`
 	Shinies          int    `json:"shinies"`
 	GoldFound        int    `json:"goldFound"`
-	TrainerXPGained  int    `json:"trainerXpGained"`
-	LastAction       string `json:"lastAction"`
+	TrainerXPGained  int     `json:"trainerXpGained"`
+	KillsPerMin      float64 `json:"killsPerMin"`
+	XPPerHour        float64 `json:"xpPerHour"`
+	LastAction       string  `json:"lastAction"`
 	LastError        string `json:"lastError,omitempty"`
 	ConnectedAt      int64  `json:"connectedAt"`
 	UpdatedAt        int64  `json:"updatedAt"`

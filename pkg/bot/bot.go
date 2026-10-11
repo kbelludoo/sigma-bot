@@ -346,6 +346,17 @@ func (b *Bot) updateSnapshot(snap *GameStateData) {
 		if snap.Analyzer.TrainerXP > 0 {
 			b.status.TrainerXPGained = snap.Analyzer.TrainerXP
 		}
+		if snap.Analyzer.ElapsedMs >= 3000 {
+			mins := float64(snap.Analyzer.ElapsedMs) / 60000.0
+			b.status.KillsPerMin = float64(snap.Analyzer.Kills) / mins
+			b.status.XPPerHour = (float64(snap.Analyzer.TrainerXP) / mins) * 60.0
+		} else {
+			elapsedMins := float64(time.Now().UnixMilli()-b.status.ConnectedAt) / 60000.0
+			if elapsedMins > 0.1 {
+				b.status.KillsPerMin = float64(b.status.Kills) / elapsedMins
+				b.status.XPPerHour = (float64(b.status.TrainerXPGained) / elapsedMins) * 60.0
+			}
+		}
 	}
 
 	// Pokémon Líder da equipe

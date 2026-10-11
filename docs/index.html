@@ -499,10 +499,10 @@
           </div>
 
           <div class="stats-row">
-            <div class="stat-item"><div class="val">${a.kills || 0}</div><div class="lbl">Kills</div></div>
+            <div class="stat-item"><div class="val">${a.kills || 0} <small style="font-size: 0.65rem; color: #a1a1aa;">(${(a.killsPerMin || 0).toFixed(1)}/m)</small></div><div class="lbl">Kills</div></div>
             <div class="stat-item"><div class="val">${a.captures || 0}</div><div class="lbl">Capturas</div></div>
             <div class="stat-item"><div class="val" style="color: #fcd34d;">${a.shinies || 0}</div><div class="lbl">Shinies</div></div>
-            <div class="stat-item"><div class="val" style="color: #38bdf8;">+${formatNumber(a.trainerXpGained)}</div><div class="lbl">XP Ganho</div></div>
+            <div class="stat-item"><div class="val" style="color: #38bdf8;">+${formatNumber(a.trainerXpGained)} <small style="font-size: 0.65rem; color: #a1a1aa;">(${formatNumber(Math.round(a.xpPerHour || 0))}/h)</small></div><div class="lbl">XP Ganho</div></div>
           </div>
 
           <div class="log-box">${a.lastAction || 'Aguardando ação...'}</div>

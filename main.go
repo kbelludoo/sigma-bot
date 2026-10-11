@@ -230,8 +230,8 @@ func main() {
 						ipInfo = fmt.Sprintf(" │ IP: \033[1;35m%s\033[0m", st.OutboundIP)
 					}
 					fmt.Printf("[%s: \033[1m%s\033[0m (Nv. %d)%s] %s\n", st.ID, name, st.Level, ipInfo, statusBadge)
-					fmt.Printf("  🗺️  Rota: \033[1;37m%s\033[0m │ ❤️  Vida: %d/%d │ ⚔️  Kills: %d │ 🎯 Caps: %d │ ✨ Shinies: %d\n",
-						st.MapName, st.HP, st.MaxHP, st.Kills, st.Captures, st.Shinies)
+					fmt.Printf("  🗺️  Rota: \033[1;37m%s\033[0m │ ❤️  Vida: %d/%d │ ⚔️  Kills: %d (%.1f/m) │ ⚡ XP/h: %.0f │ 🎯 Caps: %d\n",
+						st.MapName, st.HP, st.MaxHP, st.Kills, st.KillsPerMin, st.XPPerHour, st.Captures)
 					fmt.Printf("  💰 Ouro: \033[1;33m%s\033[0m (%d gp) │ 💎 Diamantes: %d │ XP: %d/%d (%.1f%%)\n",
 						formatGold(st.Gold), st.Gold, st.Diamonds, st.XP, st.XPToNextLevel, st.XPPercent)
 					if st.LeaderName != "" {
