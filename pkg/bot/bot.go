@@ -350,6 +350,7 @@ func (b *Bot) updateSnapshot(snap *GameStateData) {
 
 	// Pokémon Líder da equipe
 	if snap.Leader != nil {
+		b.status.LeaderSpeciesID = snap.Leader.SpeciesID
 		b.status.LeaderName = b.catalog.GetSpeciesName(snap.Leader.SpeciesID)
 		b.status.LeaderLevel = snap.Leader.Level
 		b.status.LeaderHP = snap.Leader.HP
@@ -357,6 +358,7 @@ func (b *Bot) updateSnapshot(snap *GameStateData) {
 		b.status.LeaderShiny = snap.Leader.Shiny
 	} else if len(snap.Team) > 0 {
 		leader := snap.Team[0]
+		b.status.LeaderSpeciesID = leader.SpeciesID
 		b.status.LeaderName = b.catalog.GetSpeciesName(leader.SpeciesID)
 		b.status.LeaderLevel = leader.Level
 		b.status.LeaderHP = leader.HP
@@ -470,21 +472,22 @@ func (b *Bot) tickAutomation(sock *client.SocketClient) {
 
 	// Política nativa do servidor já cuida de auto-catch e auto-hunt perfeitamente.
 
-	// 2. Viagem inteligente: se huntSlug não for fixo ou for "auto", calcula a melhor rota para o nível do treinador
+	// 2. Viagem inteligente: se huntSlug não for fixo ou for "auto", calcula a melhor rota considerando o tipo elemental do Líder
 	destMap := targetMap
+	tacticalReason := ""
 	if destMap == "" || destMap == "auto" {
-		destMap = b.catalog.GetOptimalHunt(b.status.Level)
+		destMap, tacticalReason = b.catalog.GetOptimalHuntForLeader(b.status.Level, b.status.LeaderSpeciesID)
 	}
 
 	if destMap != "" && currentMap != "" && destMap != currentMap && time.Since(b.lastTravelTime) > 12*time.Second {
 		b.lastTravelTime = time.Now()
-		log.Printf("[%s] 🚀 [ROTA OTIMIZADA] Viajando de '%s' para a melhor rota: '%s' (Nível %d)…", b.config.ID, currentMap, destMap, b.status.Level)
+		log.Printf("[%s] 🚀 [ROTA TÁTICA ELEMENTAL] Viajando de '%s' para: '%s' (%s)…", b.config.ID, currentMap, destMap, tacticalReason)
 		_ = sock.SendIntent(TravelIntent{
 			Type:    "travel",
 			MapSlug: destMap,
 		})
 		b.mu.Lock()
-		b.status.LastAction = fmt.Sprintf("Viajando para %s (Meta XP Nv. %d)...", b.catalog.GetHuntName(destMap), b.status.Level)
+		b.status.LastAction = fmt.Sprintf("Viajando para %s (%s)...", b.catalog.GetHuntName(destMap), tacticalReason)
 		b.mu.Unlock()
 		return
 	}

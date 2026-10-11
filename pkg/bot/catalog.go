@@ -3,6 +3,7 @@ package bot
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 )
@@ -19,11 +20,26 @@ type CatalogSpecies struct {
 	Rarity    string   `json:"rarity"`
 }
 
+type HuntSpeciesRef struct {
+	ID          int `json:"id"`
+	GoldPerKill int `json:"goldPerKill"`
+	XPPerKill   int `json:"xpPerKill"`
+}
+
+type HuntCard struct {
+	Species          []HuntSpeciesRef `json:"species"`
+	GoldPerKill      int              `json:"goldPerKill"`
+	XPPerKill        int              `json:"xpPerKill"`
+	Population       int              `json:"population"`
+	DamageMultiplier float64          `json:"damageMultiplier"`
+}
+
 type CatalogHunt struct {
-	Slug            string `json:"slug"`
-	Name            string `json:"name"`
-	MinTrainerLevel int    `json:"minTrainerLevel"`
-	Region          string `json:"region"`
+	Slug            string    `json:"slug"`
+	Name            string    `json:"name"`
+	MinTrainerLevel int       `json:"minTrainerLevel"`
+	Region          string    `json:"region"`
+	Card            *HuntCard `json:"card,omitempty"`
 }
 
 type CatalogBall struct {
@@ -150,4 +166,126 @@ func (c *Catalog) GetOptimalHunt(level int) string {
 	default:
 		return "poliwag"
 	}
+}
+
+// GetOptimalHuntForLeader seleciona a rota ideal combinando taxa de XP e vantagem de tipo elemental
+func (c *Catalog) GetOptimalHuntForLeader(level int, leaderSpeciesID int) (string, string) {
+	fallbackSlug := c.GetOptimalHunt(level)
+	if leaderSpeciesID <= 0 {
+		return fallbackSlug, "padrão de nível (sem líder)"
+	}
+
+	leader, hasLeader := c.GetSpecies(leaderSpeciesID)
+	if !hasLeader || len(leader.Types) == 0 {
+		return fallbackSlug, "padrão de nível (líder sem tipo)"
+	}
+
+	tiers := []int{280, 260, 240, 220, 200, 100, 80, 60, 50, 40, 30, 20, 10, 1}
+	var maxTier int
+	for _, t := range tiers {
+		if level >= t {
+			maxTier = t
+			break
+		}
+	}
+	if maxTier <= 0 {
+		maxTier = 1
+	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	var candidateHunts []CatalogHunt
+	for _, h := range c.data.Hunts {
+		if h.MinTrainerLevel == maxTier {
+			candidateHunts = append(candidateHunts, h)
+		}
+	}
+
+	if len(candidateHunts) == 0 {
+		return fallbackSlug, "padrão de nível (sem rotas no tier)"
+	}
+
+	type ScoredHunt struct {
+		slug       string
+		name       string
+		score      float64
+		offMult    float64
+		defRisk    float64
+		xp         int
+		targetName string
+	}
+
+	var best ScoredHunt
+
+	for _, h := range candidateHunts {
+		if h.Card == nil || len(h.Card.Species) == 0 {
+			continue
+		}
+
+		xp := h.Card.XPPerKill
+		if xp <= 0 {
+			xp = 1
+		}
+
+		totalOff := 0.0
+		totalRisk := 0.0
+		validSpecies := 0
+		primaryTargetName := ""
+
+		for _, sRef := range h.Card.Species {
+			wild, ok := c.speciesByID[sRef.ID]
+			if !ok {
+				continue
+			}
+			if primaryTargetName == "" {
+				primaryTargetName = wild.Name
+			}
+			off := GetBestOffensiveMultiplier(leader.Types, wild.Types)
+			risk := GetIncomingRisk(leader.Types, wild.Types)
+
+			totalOff += off
+			totalRisk += risk
+			validSpecies++
+		}
+
+		if validSpecies == 0 {
+			continue
+		}
+
+		avgOff := totalOff / float64(validSpecies)
+		avgRisk := totalRisk / float64(validSpecies)
+		if avgRisk <= 0.0 {
+			avgRisk = 0.25
+		}
+
+		// Se o golpe é completamente imune (0.0x), descarta a rota
+		if avgOff <= 0.0 {
+			continue
+		}
+
+		// Fórmula tática: XP base ponderado pelo quadrado da efetividade ofensiva, dividido pelo risco
+		tacticalScore := float64(xp) * (avgOff * avgOff) / avgRisk
+
+		if tacticalScore > best.score {
+			best = ScoredHunt{
+				slug:       h.Slug,
+				name:       h.Name,
+				score:      tacticalScore,
+				offMult:    avgOff,
+				defRisk:    avgRisk,
+				xp:         xp,
+				targetName: primaryTargetName,
+			}
+		}
+	}
+
+	if best.slug == "" {
+		return fallbackSlug, "padrão de nível"
+	}
+
+	desc := fmt.Sprintf("%s (Alvo: %s) │ Vantagem: %.1fx (Risco: %.1fx) │ XP: %d",
+		best.name, best.targetName, best.offMult, best.defRisk, best.xp)
+
+	return best.slug, desc
 }

@@ -38,6 +38,7 @@ type AccountStatus struct {
 	InGame           bool   `json:"inGame"`
 	MapSlug          string `json:"mapSlug"`
 	MapName          string `json:"mapName"`
+	LeaderSpeciesID  int    `json:"leaderSpeciesId,omitempty"`
 	LeaderName       string `json:"leaderName"`
 	LeaderLevel      int    `json:"leaderLevel"`
 	LeaderHP         int    `json:"leaderHp"`
