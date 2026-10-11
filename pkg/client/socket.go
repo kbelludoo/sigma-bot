@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"sync"
@@ -17,6 +18,7 @@ import (
 type SocketHandler func(data []byte)
 
 type SocketClient struct {
+	bindIP    string
 	wsURL     string
 	ticket    string
 	conn      *websocket.Conn
@@ -34,8 +36,9 @@ type SocketClient struct {
 	latency   time.Duration
 }
 
-func NewSocketClient() *SocketClient {
+func NewSocketClient(bindIP string) *SocketClient {
 	return &SocketClient{
+		bindIP:    bindIP,
 		handlers:  make(map[string][]SocketHandler),
 		closeChan: make(chan struct{}),
 	}
@@ -78,6 +81,15 @@ func (s *SocketClient) Connect(ticket, serverWsURL string) error {
 	dialer := websocket.Dialer{
 		TLSClientConfig:  &tls.Config{InsecureSkipVerify: false},
 		HandshakeTimeout: 15 * time.Second,
+	}
+
+	if s.bindIP != "" {
+		if ip := net.ParseIP(s.bindIP); ip != nil {
+			dialer.NetDialContext = (&net.Dialer{
+				LocalAddr: &net.TCPAddr{IP: ip},
+				Timeout:   15 * time.Second,
+			}).DialContext
+		}
 	}
 
 	conn, _, err := dialer.Dial(endpoint, headers)

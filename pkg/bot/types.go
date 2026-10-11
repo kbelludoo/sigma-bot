@@ -15,6 +15,7 @@ type AccountConfig struct {
 	AutoDaily   bool   `json:"autoDaily"`             // Coletar login diário, recompensas de quests e tarefas (default: true)
 	AutoSpin    bool   `json:"autoSpin"`              // Girar a roda da sorte quando houver giros (default: true)
 	AutoNap     bool   `json:"autoNap,omitempty"`     // Gerenciar soneca/descanso automático (default: false)
+	BindIP      string `json:"bindIP,omitempty"`      // IP local para bind da conexão (ex: "10.0.0.191", "10.0.0.49")
 	Enabled     bool   `json:"enabled"`               // Se a conta está ativa para rodar (default: true)
 }
 
@@ -23,6 +24,8 @@ type AccountStatus struct {
 	ID               string `json:"id"`
 	Alias            string `json:"alias"`
 	TrainerName      string `json:"trainerName"`
+	BindIP           string `json:"bindIp,omitempty"`
+	OutboundIP       string `json:"outboundIp,omitempty"`
 	Level            int    `json:"level"`
 	XP               int    `json:"xp"`
 	XPToNextLevel    int    `json:"xpToNextLevel"`

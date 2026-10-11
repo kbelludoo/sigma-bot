@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"time"
@@ -20,12 +21,26 @@ type APIClient struct {
 	httpClient *http.Client
 }
 
-func NewAPIClient() *APIClient {
+func NewAPIClient(bindIP string) *APIClient {
 	jar, _ := cookiejar.New(nil)
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+	}
+
+	if bindIP != "" {
+		if ip := net.ParseIP(bindIP); ip != nil {
+			transport.DialContext = (&net.Dialer{
+				LocalAddr: &net.TCPAddr{IP: ip},
+				Timeout:   15 * time.Second,
+			}).DialContext
+		}
+	}
+
 	return &APIClient{
 		httpClient: &http.Client{
-			Jar:     jar,
-			Timeout: 15 * time.Second,
+			Jar:       jar,
+			Timeout:   15 * time.Second,
+			Transport: transport,
 		},
 	}
 }

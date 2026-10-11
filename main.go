@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"runtime"
@@ -47,6 +48,27 @@ func formatGold(n int) string {
 	return fmt.Sprintf("%.2fkk gp", float64(n)/1_000_000.0)
 }
 
+func getAvailableLocalIPs() []string {
+	var available []string
+	knownIPs := []string{"10.0.0.191", "10.0.0.49", "10.0.0.217", "10.0.0.79"}
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return available
+	}
+	addrSet := make(map[string]bool)
+	for _, a := range addrs {
+		if ipNet, ok := a.(*net.IPNet); ok {
+			addrSet[ipNet.IP.String()] = true
+		}
+	}
+	for _, ip := range knownIPs {
+		if addrSet[ip] {
+			available = append(available, ip)
+		}
+	}
+	return available
+}
+
 func main() {
 	log.Println("================================================================================")
 	log.Println("    ⚡ SIGMA PROJECT MULTI-BOT NATIVO EM GO (HIGH-PERFORMANCE / ULTRA-LEVE) ⚡    ")
@@ -83,6 +105,41 @@ func main() {
 		log.Printf("⚠️ Nenhuma conta com 'enabled: true' configurada no accounts.json.")
 		log.Printf("Edite o arquivo 'accounts.json' com seus logins e defina 'enabled: true'.")
 		// Continua para que o servidor web suba permitindo visualização
+	}
+
+	availableIPs := getAvailableLocalIPs()
+	if len(availableIPs) > 0 {
+		log.Printf("🌐 IPs locais dedicados detectados: %v\n", availableIPs)
+	}
+
+	ipIndex := 0
+	for i := range activeConfigs {
+		cfg := &activeConfigs[i]
+		if len(availableIPs) > 0 {
+			if cfg.BindIP == "" || cfg.BindIP == "auto" {
+				cfg.BindIP = availableIPs[ipIndex%len(availableIPs)]
+				ipIndex++
+			} else {
+				exists := false
+				for _, ip := range availableIPs {
+					if ip == cfg.BindIP {
+						exists = true
+						break
+					}
+				}
+				if !exists {
+					assigned := availableIPs[ipIndex%len(availableIPs)]
+					log.Printf("[%s] ⚠️ BindIP '%s' não encontrado neste host. Atribuindo IP disponível: %s\n", cfg.ID, cfg.BindIP, assigned)
+					cfg.BindIP = assigned
+					ipIndex++
+				}
+			}
+		} else {
+			if cfg.BindIP != "" && cfg.BindIP != "auto" {
+				log.Printf("[%s] ℹ️ Host sem IPs dedicados mapeados. Usando rota padrão para %s.\n", cfg.ID, cfg.Name)
+				cfg.BindIP = ""
+			}
+		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -168,7 +225,11 @@ func main() {
 						name = st.ID
 					}
 
-					fmt.Printf("[%s: \033[1m%s\033[0m (Nv. %d)] %s\n", st.ID, name, st.Level, statusBadge)
+					ipInfo := ""
+					if st.OutboundIP != "" {
+						ipInfo = fmt.Sprintf(" │ IP: \033[1;35m%s\033[0m", st.OutboundIP)
+					}
+					fmt.Printf("[%s: \033[1m%s\033[0m (Nv. %d)%s] %s\n", st.ID, name, st.Level, ipInfo, statusBadge)
 					fmt.Printf("  🗺️  Rota: \033[1;37m%s\033[0m │ ❤️  Vida: %d/%d │ ⚔️  Kills: %d │ 🎯 Caps: %d │ ✨ Shinies: %d\n",
 						st.MapName, st.HP, st.MaxHP, st.Kills, st.Captures, st.Shinies)
 					fmt.Printf("  💰 Ouro: \033[1;33m%s\033[0m (%d gp) │ 💎 Diamantes: %d │ XP: %d/%d (%.1f%%)\n",

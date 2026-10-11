@@ -13,6 +13,13 @@ import (
 	"bot-sigma/pkg/client"
 )
 
+var IPMap = map[string]string{
+	"10.0.0.191": "SEU_IP_DA_VPS",
+	"10.0.0.49":  "141.148.34.23",
+	"10.0.0.217": "193.122.133.1",
+	"10.0.0.79":  "129.80.45.1",
+}
+
 type Bot struct {
 	config AccountConfig
 
@@ -55,15 +62,24 @@ func NewBot(cfg AccountConfig) *Bot {
 	cfg.BallID = ballID
 	cfg.ShinyBallID = shinyBallID
 
+	outbound := "Padrão"
+	if pub, ok := IPMap[cfg.BindIP]; ok {
+		outbound = pub
+	} else if cfg.BindIP != "" {
+		outbound = cfg.BindIP
+	}
+
 	return &Bot{
 		config:        cfg,
-		apiClient:     client.NewAPIClient(),
+		apiClient:     client.NewAPIClient(cfg.BindIP),
 		catalog:       cat,
 		targetMapSlug: cfg.HuntSlug,
 		status: AccountStatus{
 			ID:          cfg.ID,
 			Alias:       cfg.Name,
 			TrainerName: cfg.Name,
+			BindIP:      cfg.BindIP,
+			OutboundIP:  outbound,
 			MapSlug:     cfg.HuntSlug,
 			MapName:     cat.GetHuntName(cfg.HuntSlug),
 			LastAction:  "Inicializado",
@@ -192,7 +208,7 @@ func (b *Bot) runSession(ctx context.Context) error {
 		return fmt.Errorf("falha ao obter ticket: %w", err)
 	}
 
-	sock := client.NewSocketClient()
+	sock := client.NewSocketClient(b.config.BindIP)
 	b.socket = sock
 
 	disconnectChan := make(chan struct{}, 1)
