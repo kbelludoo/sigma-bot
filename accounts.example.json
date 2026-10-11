@@ -1,0 +1,32 @@
+[
+  {
+    "id": "acc1",
+    "name": "Treinador 1",
+    "email": "seu_email1@exemplo.com",
+    "password": "sua_senha_aqui",
+    "huntSlug": "auto",
+    "autoHunt": true,
+    "autoCatch": true,
+    "ballId": 1,
+    "shinyBallId": 5,
+    "autoHeal": true,
+    "autoDaily": true,
+    "autoSpin": true,
+    "enabled": true
+  },
+  {
+    "id": "acc2",
+    "name": "Treinador 2",
+    "email": "seu_email2@exemplo.com",
+    "password": "sua_senha_aqui",
+    "huntSlug": "auto",
+    "autoHunt": true,
+    "autoCatch": true,
+    "ballId": 1,
+    "shinyBallId": 5,
+    "autoHeal": true,
+    "autoDaily": true,
+    "autoSpin": true,
+    "enabled": true
+  }
+]

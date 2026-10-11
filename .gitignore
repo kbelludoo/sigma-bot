@@ -1,0 +1,16 @@
+# Binários compilados
+bot-sigma.exe
+bot-sigma-linux
+*.exe
+
+# Arquivos sensíveis com senhas e emails
+accounts.json
+*.key
+
+# Dados em tempo real
+data/
+*.log
+
+# Dependências temporárias
+tmp/
+chunks/

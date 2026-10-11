@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Sincroniza a telemetria do bot da VPS para o GitHub Pages (docs/status.json)
+STATUS=$(curl -s http://127.0.0.1:3002/api/status)
+if [ -z "$STATUS" ] || [ "$STATUS" = "null" ]; then
+  exit 0
+fi
+
+B64=$(echo "$STATUS" | base64 -w 0)
+SHA=$(gh api repos/kbelludoo/sigma-bot/contents/docs/status.json --jq .sha 2>/dev/null)
+
+if [ -n "$SHA" ]; then
+  gh api -X PUT repos/kbelludoo/sigma-bot/contents/docs/status.json \
+    -f message="telemetry: live bot status update" \
+    -f content="$B64" \
+    -f sha="$SHA" > /dev/null 2>&1
+else
+  gh api -X PUT repos/kbelludoo/sigma-bot/contents/docs/status.json \
+    -f message="telemetry: live bot status update" \
+    -f content="$B64" > /dev/null 2>&1
+fi
+echo "✓ Telemetria sincronizada com o GitHub Pages!"

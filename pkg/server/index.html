@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sigma Project — Multi-Bot Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #131b2e;
+      --card-border: #1e293b;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --purple: #a855f7;
+      --pink: #ec4899;
+      --red: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-family);
+      line-height: 1.5;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    header {
+      max-width: 1400px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand span {
+      color: var(--accent);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-yellow { background: rgba(245, 158, 11, 0.15); color: var(--yellow); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-purple { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+    .badge-red { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-shiny {
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(245, 158, 11, 0.2));
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+      animation: pulse-glow 2s infinite;
+    }
+
+    .pulse {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: pulse 1.5s infinite;
+      margin-right: 6px;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .metrics-bar {
+      max-width: 1400px;
+      margin: 0 auto 24px auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+    }
+    .metric-card .title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .metric-card .val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 20px;
+    }
+
+    .bot-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .bot-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .char-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .char-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .char-id {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .bars {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bar-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .progress-track {
+      height: 7px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+    .hp-fill { background: linear-gradient(90deg, #10b981, #34d399); }
+    .xp-fill { background: linear-gradient(90deg, #38bdf8, #818cf8); }
+
+    .sub-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .sub-box {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sub-box .lbl {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .sub-box .txt {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-item .val {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .stat-item .lbl {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .log-box {
+      font-family: monospace;
+      font-size: 0.75rem;
+      background: rgba(0,0,0,0.4);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-left: 3px solid var(--accent);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    button, select {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    button:hover, select:hover {
+      background: rgba(255,255,255,0.16);
+      border-color: rgba(255,255,255,0.25);
+    }
+    button.primary {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    button.primary:hover {
+      background: rgba(56, 189, 248, 0.35);
+    }
+    button.green {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--green);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    button.green:hover {
+      background: rgba(16, 185, 129, 0.35);
+    }
+    select {
+      flex: 1;
+      min-width: 140px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>⚡ <span>SIGMA PROJECT</span> MULTI-BOT</h1>
+      <span class="badge badge-green"><i class="pulse"></i> ONLINE</span>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-muted);">
+      Servidor: <b style="color: #fff;">poke.sigmaproject.online</b>
+    </div>
+  </header>
+
+  <div class="metrics-bar">
+    <div class="metric-card">
+      <span class="title">Contas Ativas</span>
+      <span class="val" id="m-accounts">0</span>
+    </div>
+    <div class="metric-card">
+      <span class="title">Kills Totais</span>
+      <span class="val" id="m-kills">0</span>
+    </div>
+    <div class="metric-card">
+      <span class="title">Capturas</span>
+      <span class="val" id="m-captures">0</span>
+    </div>
+    <div class="metric-card">
+      <span class="title">✨ Shinies</span>
+      <span class="val" style="color: #fcd34d;" id="m-shinies">0</span>
+    </div>
+    <div class="metric-card">
+      <span class="title">💰 Ouro Ganho</span>
+      <span class="val" style="color: #fbbf24;" id="m-gold">0</span>
+    </div>
+    <div class="metric-card">
+      <span class="title">RAM Engine</span>
+      <span class="val" id="m-ram">0 MB</span>
+    </div>
+  </div>
+
+  <div class="grid" id="bots-grid">
+    <!-- Cards de contas renderizados aqui via JS -->
+  </div>
+
+  <script>
+    let huntsList = [];
+
+    async function loadHunts() {
+      try {
+        const res = await fetch('/api/hunts');
+        if (res.ok) {
+          huntsList = await res.json();
+        }
+      } catch (e) {
+        console.error("Falha ao carregar lista de hunts:", e);
+      }
+    }
+
+    function formatNumber(n) {
+      if (!n) return "0";
+      return n.toLocaleString('pt-BR');
+    }
+
+    function formatGold(n) {
+      if (!n) return "0 gp";
+      if (n < 1000) return n + " gp";
+      if (n < 1000000) return (n / 1000).toFixed(1) + "k gp";
+      return (n / 1000000).toFixed(2) + "kk gp";
+    }
+
+    async function sendAction(botId, action, params = {}) {
+      try {
+        const res = await fetch('/api/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ botId, action, ...params })
+        });
+        if (res.ok) {
+          update();
+        }
+      } catch (e) {
+        alert("Erro ao executar ação: " + e);
+      }
+    }
+
+    async function update() {
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Atualizar métricas globais
+        let totalKills = 0;
+        let totalCaptures = 0;
+        let totalShinies = 0;
+        let totalGold = 0;
+        let activeCount = 0;
+
+        (data.accounts || []).forEach(a => {
+          if (a.inGame) activeCount++;
+          totalKills += (a.kills || 0);
+          totalCaptures += (a.captures || 0);
+          totalShinies += (a.shinies || 0);
+          totalGold += (a.goldFound || 0);
+        });
+
+        document.getElementById('m-accounts').innerText = `${activeCount} / ${(data.accounts || []).length}`;
+        document.getElementById('m-kills').innerText = formatNumber(totalKills);
+        document.getElementById('m-captures').innerText = formatNumber(totalCaptures);
+        document.getElementById('m-shinies').innerText = formatNumber(totalShinies);
+        document.getElementById('m-gold').innerText = formatGold(totalGold);
+        if (data.ramMB) {
+          document.getElementById('m-ram').innerText = `${data.ramMB.toFixed(1)} MB`;
+        }
+
+        renderCards(data.accounts || []);
+      } catch (e) {
+        console.error("Erro no polling:", e);
+      }
+    }
+
+    function renderCards(accounts) {
+      const container = document.getElementById('bots-grid');
+      container.innerHTML = '';
+
+      accounts.forEach(a => {
+        const card = document.createElement('div');
+        card.className = 'bot-card';
+
+        const statusBadge = a.inGame
+          ? '<span class="badge badge-green"><i class="pulse"></i> EM JOGO</span>'
+          : '<span class="badge badge-yellow">CONECTANDO</span>';
+
+        const huntOptions = huntsList.map(h => {
+          const selected = h.slug === a.mapSlug ? 'selected' : '';
+          return `<option value="${h.slug}" ${selected}>${h.name} (Lv. ${h.minTrainerLevel || 1}+)</option>`;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="card-head">
+            <div class="char-info">
+              <div class="char-name">
+                ${a.trainerName || a.alias || a.id}
+                <span class="badge badge-purple">Nv. ${a.level || 1}</span>
+              </div>
+              <span class="char-id">${a.id} • ${a.mapName || 'Mapa Atual'}</span>
+            </div>
+            ${statusBadge}
+          </div>
+
+          <div class="bars">
+            <div class="bar-row">
+              <div class="bar-labels">
+                <span style="color: var(--green);">Vida: ${a.hp || 0} / ${a.maxHp || 0}</span>
+                <span>${(a.hpPercent || 0).toFixed(0)}%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill hp-fill" style="width: ${Math.min(100, a.hpPercent || 0)}%;"></div>
+              </div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-labels">
+                <span style="color: var(--accent);">XP: ${a.xp || 0} / ${a.xpToNextLevel || 0}</span>
+                <span>${(a.xpPercent || 0).toFixed(0)}%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill xp-fill" style="width: ${Math.min(100, a.xpPercent || 0)}%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-grid">
+            <div class="sub-box">
+              <span class="lbl">Líder do Time</span>
+              <span class="txt">${a.leaderName ? `${a.leaderName} (Lv. ${a.leaderLevel})` : '—'}</span>
+            </div>
+            <div class="sub-box">
+              <span class="lbl">Alvo Selvagem</span>
+              <span class="txt">
+                ${a.wildTarget || 'Procurando...'}
+                ${a.wildShiny ? '<span class="badge badge-shiny">SHINY</span>' : ''}
+              </span>
+            </div>
+            <div class="sub-box">
+              <span class="lbl">Ouro</span>
+              <span class="txt" style="color: #fbbf24;">${formatGold(a.gold)}</span>
+            </div>
+            <div class="sub-box">
+              <span class="lbl">Diamantes</span>
+              <span class="txt" style="color: #67e8f9;">💎 ${a.diamonds || 0}</span>
+            </div>
+          </div>
+
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="val">${a.kills || 0}</div>
+              <div class="lbl">Kills</div>
+            </div>
+            <div class="stat-item">
+              <div class="val">${a.captures || 0}</div>
+              <div class="lbl">Capturas</div>
+            </div>
+            <div class="stat-item">
+              <div class="val" style="color: #fcd34d;">${a.shinies || 0}</div>
+              <div class="lbl">Shinies</div>
+            </div>
+            <div class="stat-item">
+              <div class="val" style="color: #38bdf8;">+${formatNumber(a.trainerXpGained)}</div>
+              <div class="lbl">XP Ganho</div>
+            </div>
+          </div>
+
+          <div class="log-box">
+            ${a.lastAction || 'Aguardando ação...'}
+          </div>
+
+          <div class="actions">
+            <select id="sel-hunt-${a.id}">
+              <option value="">-- Mudar Rota/Hunt --</option>
+              ${huntOptions}
+            </select>
+            <button class="primary" onclick="sendAction('${a.id}', 'travel', { mapSlug: document.getElementById('sel-hunt-${a.id}').value })">Viajar</button>
+            <button class="green" onclick="sendAction('${a.id}', 'heal')">🏥 Curar</button>
+            <button onclick="sendAction('${a.id}', 'claim')">🎁 Recompensas</button>
+            <button onclick="sendAction('${a.id}', 'toggle-autohunt', { on: ${!a.autoHuntActive} })">${a.autoHuntActive ? 'Desativar Hunt' : 'Ativar Hunt'}</button>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    // Inicialização
+    loadHunts();
+    update();
+    setInterval(update, 1500);
+  </script>
+</body>
+</html>
