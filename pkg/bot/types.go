@@ -36,6 +36,7 @@ type AccountStatus struct {
 	Gold             int    `json:"gold"`
 	Diamonds         int    `json:"diamonds"`
 	InGame           bool   `json:"inGame"`
+	InHunt           bool   `json:"inHunt"`
 	MapSlug          string `json:"mapSlug"`
 	MapName          string `json:"mapName"`
 	LeaderSpeciesID  int    `json:"leaderSpeciesId,omitempty"`
@@ -61,6 +62,15 @@ type AccountStatus struct {
 	LastError        string `json:"lastError,omitempty"`
 	ConnectedAt      int64  `json:"connectedAt"`
 	UpdatedAt        int64  `json:"updatedAt"`
+}
+
+// InventoryItem representa um item de saque ou suprimento no inventário
+type InventoryItem struct {
+	ItemID    int    `json:"itemId"`
+	Count     int    `json:"count"`
+	Category  string `json:"category"`
+	SellPrice int    `json:"sellPrice"`
+	Locked    bool   `json:"locked"`
 }
 
 // Estruturas do Snapshot do Sigma Project recebido via WebSocket
@@ -92,6 +102,7 @@ type GameStateData struct {
 	Pokedex    PokedexData        `json:"pokedex"`
 	Leader     *LeaderData        `json:"leader"`
 	Hunt       *HuntData          `json:"hunt"`
+	InCity     bool               `json:"inCity"`
 	Bot        *BotPolicyData     `json:"bot"`
 	AutoHunt   bool               `json:"autoHunt"`
 	Balls      map[string]int     `json:"balls"`
@@ -101,6 +112,7 @@ type GameStateData struct {
 	City       *CityData          `json:"city"`
 	DailyLogin *DailyLoginData    `json:"dailyLogin"`
 	Quests     []QuestData        `json:"quests"`
+	Inventory  []InventoryItem    `json:"inventory"`
 }
 
 type TrainerData struct {

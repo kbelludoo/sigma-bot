@@ -40,6 +40,8 @@ type Bot struct {
 	lastTargetTime  time.Time
 	lastBallBuyTime   time.Time
 	lastGuildBossTime time.Time
+	lastSellTime      time.Time
+	inventoryLoot     []InventoryItem
 	totalBalls        int
 
 	initialGold int
@@ -399,7 +401,8 @@ func (b *Bot) updateSnapshot(snap *GameStateData) {
 	}
 
 	// Dados de caça e mapa
-	if snap.Hunt != nil {
+	if snap.Hunt != nil && snap.Hunt.MapSlug != "" {
+		b.status.InHunt = true
 		b.status.MapSlug = snap.Hunt.MapSlug
 		b.status.MapName = b.catalog.GetHuntName(snap.Hunt.MapSlug)
 
@@ -417,6 +420,26 @@ func (b *Bot) updateSnapshot(snap *GameStateData) {
 			b.status.WildLevel = w.Level
 			b.status.WildShiny = w.Shiny
 		}
+	} else {
+		b.status.InHunt = false
+		b.status.MapSlug = ""
+		b.status.MapName = "Na Cidade / PokéCenter"
+		b.status.WildTarget = ""
+		b.status.WildHP = 0
+		b.status.WildMaxHP = 0
+		b.status.WildLevel = 0
+		b.status.WildShiny = false
+	}
+
+	// Guarda itens de saque (loot) para auto-venda lucrativa
+	if len(snap.Inventory) > 0 {
+		var loots []InventoryItem
+		for _, it := range snap.Inventory {
+			if it.Category == "loot" && it.Count > 0 && !it.Locked {
+				loots = append(loots, it)
+			}
+		}
+		b.inventoryLoot = loots
 	}
 
 	// Contagem total de Pokébolas
@@ -511,9 +534,16 @@ func (b *Bot) tickAutomation(sock *client.SocketClient) {
 		destMap, tacticalReason = b.catalog.GetOptimalHuntForLeader(b.status.Level, b.status.LeaderSpeciesID)
 	}
 
-	if destMap != "" && currentMap != "" && destMap != currentMap && time.Since(b.lastTravelTime) > 12*time.Second {
+	needsTravel := false
+	if destMap != "" {
+		if !b.status.InHunt || currentMap == "" || currentMap != destMap {
+			needsTravel = true
+		}
+	}
+
+	if needsTravel && time.Since(b.lastTravelTime) > 8*time.Second {
 		b.lastTravelTime = time.Now()
-		log.Printf("[%s] 🚀 [ROTA TÁTICA ELEMENTAL] Viajando de '%s' para: '%s' (%s)…", b.config.ID, currentMap, destMap, tacticalReason)
+		log.Printf("[%s] 🚀 [ROTA TÁTICA ELEMENTAL] Saindo da cidade/rota '%s' para: '%s' (%s)…", b.config.ID, currentMap, destMap, tacticalReason)
 		_ = sock.SendIntent(TravelIntent{
 			Type:    "travel",
 			MapSlug: destMap,
@@ -586,12 +616,24 @@ func (b *Bot) tickAutomation(sock *client.SocketClient) {
 		})
 	}
 
-	// 8. Auto-participação no Guild Boss semanal e resgate de prêmios (a cada 2 minutos)
-	if time.Since(b.lastGuildBossTime) > 2*time.Minute {
-		b.lastGuildBossTime = time.Now()
-		_ = sock.SendIntent(SimpleIntent{Type: "enterGuildBoss"})
-		_ = sock.SendIntent(SimpleIntent{Type: "claimGuildBossReward"})
-		_ = sock.SendIntent(SimpleIntent{Type: "claimGuildBossPrize"})
+	// 8. Auto-venda de itens de loot no inventário para gerar ouro contínuo
+	if len(b.inventoryLoot) > 0 && time.Since(b.lastSellTime) > 20*time.Second {
+		b.lastSellTime = time.Now()
+		soldCount := 0
+		for _, it := range b.inventoryLoot {
+			if it.Count > 0 {
+				_ = sock.SendIntent(map[string]any{
+					"type":   "sellItem",
+					"itemId": it.ItemID,
+					"count":  it.Count,
+				})
+				soldCount += it.Count
+			}
+		}
+		if soldCount > 0 {
+			log.Printf("[%s] 💰 [AUTO-VENDA] Vendidos %d itens de loot no NPC!", b.config.ID, soldCount)
+		}
+		b.inventoryLoot = nil
 	}
 }
 
