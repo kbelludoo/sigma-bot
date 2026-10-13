@@ -22,7 +22,7 @@
       "inHunt": true,
       "kills": 48,
       "killsPerMin": 17.597503900156006,
-      "lastAction": "Erro: falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance) (tentando em 15s)",
+      "lastAction": "Erro: falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance) (tentando em 30s)",
       "lastError": "falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance)",
       "leaderHp": 231,
       "leaderLevel": 83,
@@ -71,8 +71,7 @@
       "inHunt": true,
       "kills": 7,
       "killsPerMin": 12.352941176470589,
-      "lastAction": "Erro: falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance) (tentando em 15s)",
-      "lastError": "falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance)",
+      "lastAction": "Autenticando...",
       "leaderHp": 239,
       "leaderLevel": 56,
       "leaderMaxHp": 1680,
@@ -120,7 +119,7 @@
       "inHunt": true,
       "kills": 47,
       "killsPerMin": 31.16022099447514,
-      "lastAction": "Erro: falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance) (tentando em 15s)",
+      "lastAction": "Erro: falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance) (tentando em 30s)",
       "lastError": "falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance)",
       "leaderHp": 212,
       "leaderLevel": 127,
@@ -148,6 +147,6 @@
       "xpToNextLevel": 800200
     }
   ],
-  "ramMB": 2.1317520141601562,
-  "serverTime": 1791921844133
+  "ramMB": 1.7607803344726562,
+  "serverTime": 1791921964050
 }
