@@ -120,8 +120,7 @@
       "inHunt": true,
       "kills": 47,
       "killsPerMin": 31.16022099447514,
-      "lastAction": "Erro: falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance) (tentando em 30s)",
-      "lastError": "falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance)",
+      "lastAction": "Autenticando...",
       "leaderHp": 212,
       "leaderLevel": 127,
       "leaderMaxHp": 2592,
@@ -148,6 +147,6 @@
       "xpToNextLevel": 800200
     }
   ],
-  "ramMB": 1.5919036865234375,
-  "serverTime": 1791924244633
+  "ramMB": 1.5797576904296875,
+  "serverTime": 1791924364152
 }
