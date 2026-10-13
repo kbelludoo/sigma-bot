@@ -78,6 +78,7 @@
     .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
     .badge-yellow { background: rgba(245, 158, 11, 0.15); color: var(--yellow); border: 1px solid rgba(245, 158, 11, 0.3); }
     .badge-purple { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+    .badge-cyan { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
     .badge-red { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
     .badge-shiny {
       background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(245, 158, 11, 0.2));
@@ -314,6 +315,22 @@
     button.green:hover {
       background: rgba(16, 185, 129, 0.35);
     }
+    button.yellow {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--yellow);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    button.yellow:hover {
+      background: rgba(245, 158, 11, 0.35);
+    }
+    button.cyan {
+      background: rgba(6, 182, 212, 0.2);
+      color: #22d3ee;
+      border-color: rgba(6, 182, 212, 0.4);
+    }
+    button.cyan:hover {
+      background: rgba(6, 182, 212, 0.35);
+    }
     select {
       flex: 1;
       min-width: 140px;
@@ -463,6 +480,9 @@
               <div class="char-name">
                 ${a.trainerName || a.alias || a.id}
                 <span class="badge badge-purple">Nv. ${a.level || 1}</span>
+                ${a.strategy === 'bestiary'
+                  ? `<span class="badge badge-cyan" title="Meta: ${a.bestiaryTargetKills || 120} kills">📖 BESTIÁRIO</span>`
+                  : `<span class="badge badge-yellow" title="Rush de XP e Gold">⚡ RUSH XP</span>`}
               </div>
               <span class="char-id">${a.id} • ${a.mapName || 'Mapa Atual'}</span>
             </div>
@@ -507,8 +527,10 @@
               <span class="txt" style="color: #fbbf24;">${formatGold(a.gold)}</span>
             </div>
             <div class="sub-box">
-              <span class="lbl">Diamantes</span>
-              <span class="txt" style="color: #67e8f9;">💎 ${a.diamonds || 0}</span>
+              <span class="lbl">📖 Bestiário</span>
+              <span class="txt" style="color: #38bdf8;">
+                Nv. ${a.bestiaryLevel || 1} <small style="font-size: 0.68rem; color: #a1a1aa;">(${a.bestiaryPoints || 0} pts)</small>
+              </span>
             </div>
           </div>
 
@@ -541,8 +563,11 @@
               ${huntOptions}
             </select>
             <button class="primary" onclick="sendAction('${a.id}', 'travel', { mapSlug: document.getElementById('sel-hunt-${a.id}').value })">Viajar</button>
+            <button class="${a.strategy === 'bestiary' ? 'yellow' : 'cyan'}" onclick="sendAction('${a.id}', 'set-strategy', { strategy: '${a.strategy === 'bestiary' ? 'rush' : 'bestiary'}' })">
+              ${a.strategy === 'bestiary' ? '⚡ Modo Rush' : '📖 Bestiário'}
+            </button>
             <button class="green" onclick="sendAction('${a.id}', 'heal')">🏥 Curar</button>
-            <button onclick="sendAction('${a.id}', 'claim')">🎁 Recompensas</button>
+            <button onclick="sendAction('${a.id}', 'claim')">🎁 Coletar</button>
             <button onclick="sendAction('${a.id}', 'toggle-autohunt', { on: ${!a.autoHuntActive} })">${a.autoHuntActive ? 'Desativar Hunt' : 'Ativar Hunt'}</button>
           </div>
         `;

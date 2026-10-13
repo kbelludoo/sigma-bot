@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -144,13 +145,19 @@ func (c *Catalog) GetBall(id int) (CatalogBall, bool) {
 	return b, ok
 }
 
+var unroutableHunts = map[string]bool{
+	"vaporeon": true,
+	"flareon":  true,
+	"jolteon":  true,
+}
+
 // GetOptimalHunt retorna a rota com maior taxa de XP/Gold permitida para o nível do treinador
 func (c *Catalog) GetOptimalHunt(level int) string {
 	switch {
 	case level >= 100:
 		return "electabuzz"
 	case level >= 80:
-		return "vaporeon"
+		return "omastar"
 	case level >= 60:
 		return "chansey"
 	case level >= 50:
@@ -197,7 +204,7 @@ func (c *Catalog) GetOptimalHuntForLeader(level int, leaderSpeciesID int) (strin
 
 	var candidateHunts []CatalogHunt
 	for _, h := range c.data.Hunts {
-		if h.MinTrainerLevel == maxTier {
+		if h.MinTrainerLevel == maxTier && !unroutableHunts[h.Slug] {
 			candidateHunts = append(candidateHunts, h)
 		}
 	}
@@ -303,3 +310,63 @@ func (c *Catalog) GetOptimalHuntForLeader(level int, leaderSpeciesID int) (strin
 
 	return best.slug, desc
 }
+
+// GetNextBestiaryHunt localiza o próximo mapa de caça com abates pendentes para o nível do treinador
+func (c *Catalog) GetNextBestiaryHunt(trainerLevel int, killsBySpecies map[int]int, targetKills int) (string, string, int) {
+	if targetKills <= 0 {
+		targetKills = 120
+	}
+
+	type Candidate struct {
+		slug            string
+		name            string
+		minTrainerLevel int
+		speciesID       int
+		speciesName     string
+		kills           int
+	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	var candidates []Candidate
+	for _, h := range c.data.Hunts {
+		if h.MinTrainerLevel > trainerLevel || unroutableHunts[h.Slug] {
+			continue
+		}
+		if h.Card == nil || len(h.Card.Species) == 0 {
+			continue
+		}
+		primaryID := h.Card.Species[0].ID
+		k := killsBySpecies[primaryID]
+		if k < targetKills {
+			candidates = append(candidates, Candidate{
+				slug:            h.Slug,
+				name:            h.Name,
+				minTrainerLevel: h.MinTrainerLevel,
+				speciesID:       primaryID,
+				speciesName:     c.GetSpeciesName(primaryID),
+				kills:           k,
+			})
+		}
+	}
+
+	if len(candidates) == 0 {
+		return "", "", 0
+	}
+
+	// Ordena por:
+	// 1. MinTrainerLevel ASC (limpa dos níveis mais baixos aos mais altos rapidamente)
+	// 2. Kills DESC (se já tem 80/120 abates, finaliza logo antes de começar do zero)
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].minTrainerLevel != candidates[j].minTrainerLevel {
+			return candidates[i].minTrainerLevel < candidates[j].minTrainerLevel
+		}
+		return candidates[i].kills > candidates[j].kills
+	})
+
+	picked := candidates[0]
+	desc := fmt.Sprintf("%s (%s) [Bestiário: %d/%d abates]", picked.name, picked.speciesName, picked.kills, targetKills)
+	return picked.slug, desc, len(candidates)
+}
+

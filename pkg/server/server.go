@@ -91,10 +91,12 @@ func (s *Server) Start() error {
 		}
 
 		var req struct {
-			BotID   string `json:"botId"`
-			Action  string `json:"action"`
-			MapSlug string `json:"mapSlug,omitempty"`
-			On      bool   `json:"on,omitempty"`
+			BotID       string `json:"botId"`
+			Action      string `json:"action"`
+			MapSlug     string `json:"mapSlug,omitempty"`
+			On          bool   `json:"on,omitempty"`
+			Strategy    string `json:"strategy,omitempty"`
+			TargetKills int    `json:"targetKills,omitempty"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -119,6 +121,10 @@ func (s *Server) Start() error {
 			_ = b.ClaimRewardsNow()
 		case "toggle-autohunt":
 			_ = b.ToggleAutoHunt(req.On)
+		case "set-strategy":
+			if req.Strategy != "" {
+				b.SetStrategy(req.Strategy, req.TargetKills)
+			}
 		case "pause":
 			b.Pause()
 		case "resume":

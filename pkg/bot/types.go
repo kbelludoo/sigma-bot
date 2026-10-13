@@ -15,53 +15,64 @@ type AccountConfig struct {
 	AutoDaily   bool   `json:"autoDaily"`             // Coletar login diário, recompensas de quests e tarefas (default: true)
 	AutoSpin    bool   `json:"autoSpin"`              // Girar a roda da sorte quando houver giros (default: true)
 	AutoNap     bool   `json:"autoNap,omitempty"`     // Gerenciar soneca/descanso automático (default: false)
-	BindIP      string `json:"bindIP,omitempty"`      // IP local para bind da conexão (ex: "10.0.0.191", "10.0.0.49")
-	Enabled     bool   `json:"enabled"`               // Se a conta está ativa para rodar (default: true)
+	Strategy            string `json:"strategy,omitempty"`            // "rush" (padrão de XP) ou "bestiary" (tour completo de degraus)
+	BestiaryTargetKills int    `json:"bestiaryTargetKills,omitempty"` // Meta de abates por monstro no modo bestiário (default: 120)
+	BindIP              string `json:"bindIP,omitempty"`              // IP local para bind da conexão (ex: "10.0.0.191", "10.0.0.49")
+	Enabled             bool   `json:"enabled"`                       // Se a conta está ativa para rodar (default: true)
 }
 
 // AccountStatus reflete o estado em tempo real da conta para exibição no Terminal e no Dashboard Web
 type AccountStatus struct {
-	ID               string `json:"id"`
-	Alias            string `json:"alias"`
-	TrainerName      string `json:"trainerName"`
-	BindIP           string `json:"bindIp,omitempty"`
-	OutboundIP       string `json:"outboundIp,omitempty"`
-	Level            int    `json:"level"`
-	XP               int    `json:"xp"`
-	XPToNextLevel    int    `json:"xpToNextLevel"`
-	XPPercent        float64 `json:"xpPercent"`
-	HP               int    `json:"hp"`
-	MaxHP            int    `json:"maxHp"`
-	HPPercent        float64 `json:"hpPercent"`
-	Gold             int    `json:"gold"`
-	Diamonds         int    `json:"diamonds"`
-	InGame           bool   `json:"inGame"`
-	InHunt           bool   `json:"inHunt"`
-	MapSlug          string `json:"mapSlug"`
-	MapName          string `json:"mapName"`
-	LeaderSpeciesID  int    `json:"leaderSpeciesId,omitempty"`
-	LeaderName       string `json:"leaderName"`
-	LeaderLevel      int    `json:"leaderLevel"`
-	LeaderHP         int    `json:"leaderHp"`
-	LeaderMaxHP      int    `json:"leaderMaxHp"`
-	LeaderShiny      bool   `json:"leaderShiny"`
-	WildTarget       string `json:"wildTarget"`
-	WildHP           int    `json:"wildHp"`
-	WildMaxHP        int    `json:"wildMaxHp"`
-	WildLevel        int    `json:"wildLevel"`
-	WildShiny        bool   `json:"wildShiny"`
-	AutoHuntActive   bool   `json:"autoHuntActive"`
-	Kills            int    `json:"kills"`
-	Captures         int    `json:"captures"`
-	Shinies          int    `json:"shinies"`
-	GoldFound        int    `json:"goldFound"`
-	TrainerXPGained  int     `json:"trainerXpGained"`
-	KillsPerMin      float64 `json:"killsPerMin"`
-	XPPerHour        float64 `json:"xpPerHour"`
-	LastAction       string  `json:"lastAction"`
-	LastError        string `json:"lastError,omitempty"`
-	ConnectedAt      int64  `json:"connectedAt"`
-	UpdatedAt        int64  `json:"updatedAt"`
+	ID                   string  `json:"id"`
+	Alias                string  `json:"alias"`
+	TrainerName          string  `json:"trainerName"`
+	BindIP               string  `json:"bindIp,omitempty"`
+	OutboundIP           string  `json:"outboundIp,omitempty"`
+	Strategy             string  `json:"strategy,omitempty"`
+	Level                int     `json:"level"`
+	XP                   int     `json:"xp"`
+	XPToNextLevel        int     `json:"xpToNextLevel"`
+	XPPercent            float64 `json:"xpPercent"`
+	HP                   int     `json:"hp"`
+	MaxHP                int     `json:"maxHp"`
+	HPPercent            float64 `json:"hpPercent"`
+	Gold                 int     `json:"gold"`
+	Diamonds             int     `json:"diamonds"`
+	InGame               bool    `json:"inGame"`
+	InHunt               bool    `json:"inHunt"`
+	MapSlug              string  `json:"mapSlug"`
+	MapName              string  `json:"mapName"`
+	LeaderSpeciesID      int     `json:"leaderSpeciesId,omitempty"`
+	LeaderName           string  `json:"leaderName"`
+	LeaderLevel          int     `json:"leaderLevel"`
+	LeaderHP             int     `json:"leaderHp"`
+	LeaderMaxHP          int     `json:"leaderMaxHp"`
+	LeaderShiny          bool    `json:"leaderShiny"`
+	WildTarget           string  `json:"wildTarget"`
+	WildHP               int     `json:"wildHp"`
+	WildMaxHP            int     `json:"wildMaxHp"`
+	WildLevel            int     `json:"wildLevel"`
+	WildShiny            bool    `json:"wildShiny"`
+	AutoHuntActive       bool    `json:"autoHuntActive"`
+	Kills                int     `json:"kills"`
+	Captures             int     `json:"captures"`
+	Shinies              int     `json:"shinies"`
+	GoldFound            int     `json:"goldFound"`
+	TrainerXPGained      int     `json:"trainerXpGained"`
+	KillsPerMin          float64 `json:"killsPerMin"`
+	XPPerHour            float64 `json:"xpPerHour"`
+	BestiaryLevel          int     `json:"bestiaryLevel,omitempty"`
+	BestiaryPoints         int     `json:"bestiaryPoints,omitempty"`
+	BestiaryNextPoints     int     `json:"bestiaryNextPoints,omitempty"`
+	BestiaryTargetKills    int     `json:"bestiaryTargetKills,omitempty"`
+	BestiaryTotalKills     int     `json:"bestiaryTotalKills,omitempty"`
+	BestiaryCurrentKills   int     `json:"bestiaryCurrentKills,omitempty"`
+	BestiaryCompletedCount int     `json:"bestiaryCompletedCount,omitempty"`
+	BestiaryPendingCount   int     `json:"bestiaryPendingCount,omitempty"`
+	LastAction           string  `json:"lastAction"`
+	LastError            string  `json:"lastError,omitempty"`
+	ConnectedAt          int64   `json:"connectedAt"`
+	UpdatedAt            int64   `json:"updatedAt"`
 }
 
 // InventoryItem representa um item de saque ou suprimento no inventário

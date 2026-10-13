@@ -198,3 +198,55 @@ func (c *APIClient) GetMe(accessToken string) (*TrainerInfo, error) {
 	}
 	return &info, nil
 }
+
+type BestiarySpecies struct {
+	ID      int   `json:"id"`
+	Kills   int   `json:"kills"`
+	Level   int   `json:"level"`
+	Claimed []int `json:"claimed"`
+	Owed    int   `json:"owed"`
+}
+
+type BestiaryLadderStep struct {
+	Kills   int `json:"kills"`
+	Points  int `json:"points"`
+}
+
+type BestiaryResponse struct {
+	Level      int                  `json:"level"`
+	Points     int                  `json:"points"`
+	NextPoints *int                 `json:"nextPoints"`
+	Ladder     []BestiaryLadderStep `json:"ladder"`
+	Species    []BestiarySpecies    `json:"species"`
+}
+
+// GetBestiary obtém os dados completos do bestiário do jogador
+func (c *APIClient) GetBestiary(accessToken string) (*BestiaryResponse, error) {
+	req, err := http.NewRequest("GET", BaseURL+"/bestiary", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("Origin", OriginURL)
+	req.Header.Set("Referer", OriginURL+"/")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("falha em /bestiary (%d): %s", resp.StatusCode, string(body))
+	}
+
+	var data BestiaryResponse
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}
+

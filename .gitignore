@@ -9,8 +9,11 @@ accounts.json
 
 # Dados em tempo real
 data/
+snap_*.json
 *.log
 
 # Dependências temporárias
 tmp/
 chunks/
+bestiary_*.json
+bestiary_*.js

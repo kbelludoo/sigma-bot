@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,8 +42,13 @@ type Bot struct {
 	lastBallBuyTime   time.Time
 	lastGuildBossTime time.Time
 	lastSellTime      time.Time
+	lastLeaderSetTime time.Time
 	inventoryLoot     []InventoryItem
 	totalBalls        int
+
+	accessToken      string
+	killsBySpecies   map[int]int
+	lastBestiarySync time.Time
 
 	initialGold int
 	initialXP   int
@@ -65,6 +71,17 @@ func NewBot(cfg AccountConfig) *Bot {
 	cfg.BallID = ballID
 	cfg.ShinyBallID = shinyBallID
 
+	strategy := cfg.Strategy
+	if strategy == "" {
+		strategy = "rush"
+	}
+	targetKills := cfg.BestiaryTargetKills
+	if targetKills <= 0 {
+		targetKills = 120
+	}
+	cfg.Strategy = strategy
+	cfg.BestiaryTargetKills = targetKills
+
 	outbound := "Padrão"
 	if pub, ok := IPMap[cfg.BindIP]; ok {
 		outbound = pub
@@ -73,20 +90,23 @@ func NewBot(cfg AccountConfig) *Bot {
 	}
 
 	return &Bot{
-		config:        cfg,
-		apiClient:     client.NewAPIClient(cfg.BindIP),
-		catalog:       cat,
-		targetMapSlug: cfg.HuntSlug,
+		config:         cfg,
+		apiClient:      client.NewAPIClient(cfg.BindIP),
+		catalog:        cat,
+		targetMapSlug:  cfg.HuntSlug,
+		killsBySpecies: make(map[int]int),
 		status: AccountStatus{
-			ID:          cfg.ID,
-			Alias:       cfg.Name,
-			TrainerName: cfg.Name,
-			BindIP:      cfg.BindIP,
-			OutboundIP:  outbound,
-			MapSlug:     cfg.HuntSlug,
-			MapName:     cat.GetHuntName(cfg.HuntSlug),
-			LastAction:  "Inicializado",
-			UpdatedAt:   time.Now().UnixMilli(),
+			ID:                  cfg.ID,
+			Alias:               cfg.Name,
+			TrainerName:         cfg.Name,
+			BindIP:              cfg.BindIP,
+			OutboundIP:          outbound,
+			Strategy:            strategy,
+			BestiaryTargetKills: targetKills,
+			MapSlug:             cfg.HuntSlug,
+			MapName:             cat.GetHuntName(cfg.HuntSlug),
+			LastAction:          "Inicializado",
+			UpdatedAt:           time.Now().UnixMilli(),
 		},
 	}
 }
@@ -203,8 +223,12 @@ func (b *Bot) runSession(ctx context.Context) error {
 	}
 
 	b.mu.Lock()
+	b.accessToken = loginResp.AccessToken
 	b.status.LastAction = "Obtendo ticket do servidor..."
 	b.mu.Unlock()
+
+	// Sincroniza dados do bestiário logo após autenticação
+	go b.syncBestiary()
 
 	ticketResp, err := b.apiClient.GetTicket(loginResp.AccessToken)
 	if err != nil {
@@ -381,15 +405,16 @@ func (b *Bot) updateSnapshot(snap *GameStateData) {
 	}
 
 	// Garante que o Pokémon de maior nível da equipe seja sempre o Líder ativo
-	if len(snap.Team) > 1 && b.socket != nil {
+	if len(snap.Team) > 1 && b.socket != nil && time.Since(b.lastLeaderSetTime) > 4*time.Second {
 		var best *TeamPokemonData
 		for i := range snap.Team {
 			p := &snap.Team[i]
-			if best == nil || p.Level > best.Level {
+			if p.HP > 0 && (best == nil || p.Level > best.Level) {
 				best = p
 			}
 		}
 		if best != nil && snap.Leader != nil && best.PokemonID != snap.Leader.PokemonID && best.Level > snap.Leader.Level {
+			b.lastLeaderSetTime = time.Now()
 			log.Printf("[%s] 🚀 [AUTO-LÍDER] Promovendo %s (Nv. %d) para Líder (substituindo %s Nv. %d)...",
 				b.config.ID, b.catalog.GetSpeciesName(best.SpeciesID), best.Level,
 				b.catalog.GetSpeciesName(snap.Leader.SpeciesID), snap.Leader.Level)
@@ -463,6 +488,10 @@ func (b *Bot) processEvents(events []EventData) {
 		switch ev.Type {
 		case "kill":
 			b.status.Kills++
+			if ev.SpeciesID > 0 {
+				b.killsBySpecies[ev.SpeciesID]++
+				b.status.BestiaryTotalKills++
+			}
 			mon := b.catalog.GetSpeciesName(ev.SpeciesID)
 			b.status.LastAction = fmt.Sprintf("Derrotou %s (+%d XP, +%d Ouro)", mon, ev.XP, ev.Gold)
 		case "captured":
@@ -527,10 +556,36 @@ func (b *Bot) tickAutomation(sock *client.SocketClient) {
 
 	// Política nativa do servidor já cuida de auto-catch e auto-hunt perfeitamente.
 
-	// 2. Viagem inteligente: se huntSlug não for fixo ou for "auto", calcula a melhor rota considerando o tipo elemental do Líder
+	// 0. Sincronização periódica do bestiário a cada 3 minutos
+	if b.accessToken != "" && time.Since(b.lastBestiarySync) > 3*time.Minute {
+		go b.syncBestiary()
+	}
+
+	// 2. Viagem inteligente: se huntSlug for "auto" ou estratégia for "bestiary"
 	destMap := targetMap
 	tacticalReason := ""
-	if destMap == "" || destMap == "auto" {
+
+	if cfg.Strategy == "bestiary" {
+		b.mu.RLock()
+		killsCopy := make(map[int]int, len(b.killsBySpecies))
+		for k, v := range b.killsBySpecies {
+			killsCopy[k] = v
+		}
+		b.mu.RUnlock()
+
+		nextSlug, reason, pending := b.catalog.GetNextBestiaryHunt(b.status.Level, killsCopy, cfg.BestiaryTargetKills)
+		b.mu.Lock()
+		b.status.BestiaryPendingCount = pending
+		b.mu.Unlock()
+
+		if nextSlug != "" {
+			destMap = nextSlug
+			tacticalReason = reason
+		} else {
+			destMap, tacticalReason = b.catalog.GetOptimalHuntForLeader(b.status.Level, b.status.LeaderSpeciesID)
+			tacticalReason = "🏆 [Bestiário Completo!] " + tacticalReason
+		}
+	} else if destMap == "" || destMap == "auto" {
 		destMap, tacticalReason = b.catalog.GetOptimalHuntForLeader(b.status.Level, b.status.LeaderSpeciesID)
 	}
 
@@ -543,7 +598,11 @@ func (b *Bot) tickAutomation(sock *client.SocketClient) {
 
 	if needsTravel && time.Since(b.lastTravelTime) > 8*time.Second {
 		b.lastTravelTime = time.Now()
-		log.Printf("[%s] 🚀 [ROTA TÁTICA ELEMENTAL] Saindo da cidade/rota '%s' para: '%s' (%s)…", b.config.ID, currentMap, destMap, tacticalReason)
+		if cfg.Strategy == "bestiary" {
+			_ = sock.SendIntent(SimpleIntent{Type: "claimBestiaryAll"})
+		}
+		log.Printf("[%s] 🚀 [ROTA TÁTICA %s] Saindo da cidade/rota '%s' para: '%s' (%s)…",
+			b.config.ID, strings.ToUpper(cfg.Strategy), currentMap, destMap, tacticalReason)
 		_ = sock.SendIntent(TravelIntent{
 			Type:    "travel",
 			MapSlug: destMap,
@@ -710,3 +769,73 @@ func (b *Bot) Resume() {
 	b.paused = false
 	b.mu.Unlock()
 }
+
+func (b *Bot) syncBestiary() {
+	b.mu.RLock()
+	token := b.accessToken
+	targetKills := b.config.BestiaryTargetKills
+	b.mu.RUnlock()
+
+	if token == "" {
+		return
+	}
+	if targetKills <= 0 {
+		targetKills = 120
+	}
+
+	bestiary, err := b.apiClient.GetBestiary(token)
+	if err != nil {
+		log.Printf("[%s] Falha ao sincronizar bestiário: %v", b.config.ID, err)
+		return
+	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.lastBestiarySync = time.Now()
+	b.status.BestiaryLevel = bestiary.Level
+	b.status.BestiaryPoints = bestiary.Points
+	if bestiary.NextPoints != nil {
+		b.status.BestiaryNextPoints = *bestiary.NextPoints
+	} else {
+		b.status.BestiaryNextPoints = 0
+	}
+
+	totalKills := 0
+	completed := 0
+	for _, sp := range bestiary.Species {
+		b.killsBySpecies[sp.ID] = sp.Kills
+		totalKills += sp.Kills
+		if sp.Kills >= targetKills {
+			completed++
+		}
+	}
+
+	b.status.BestiaryTotalKills = totalKills
+	b.status.BestiaryCompletedCount = completed
+	b.status.BestiaryPendingCount = len(bestiary.Species) - completed
+
+	nextPtsStr := "MAX"
+	if bestiary.NextPoints != nil {
+		nextPtsStr = fmt.Sprintf("%d pts", *bestiary.NextPoints)
+	}
+
+	log.Printf("[%s] 📖 [BESTIÁRIO] Nível %d (%d pts, prox: %s) │ Abates: %d │ Concluídos: %d/%d (Meta: %d)",
+		b.config.ID, bestiary.Level, bestiary.Points, nextPtsStr, totalKills, completed, len(bestiary.Species), targetKills)
+}
+
+func (b *Bot) SetStrategy(strategy string, targetKills int) {
+	b.mu.Lock()
+	b.config.Strategy = strategy
+	b.status.Strategy = strategy
+	if targetKills > 0 {
+		b.config.BestiaryTargetKills = targetKills
+		b.status.BestiaryTargetKills = targetKills
+	}
+	b.mu.Unlock()
+	log.Printf("[%s] 🎯 Estratégia alterada para '%s' (Meta Bestiário: %d abates)", b.config.ID, strategy, b.status.BestiaryTargetKills)
+	if strategy == "bestiary" {
+		go b.syncBestiary()
+	}
+}
+
