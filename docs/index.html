@@ -320,11 +320,6 @@
     </div>
   </header>
 
-  <div class="api-bar">
-    <label for="api-url">🔗 Endpoint da API / Túnel:</label>
-    <input type="text" id="api-url" value="https://mountain-revision-conservative-quest.trycloudflare.com" placeholder="Ex: https://mountain-revision-conservative-quest.trycloudflare.com ou status.json">
-    <button onclick="saveApiUrl()">Conectar</button>
-  </div>
 
   <div class="metrics-bar">
     <div class="metric-card">
@@ -358,16 +353,6 @@
   </div>
 
   <script>
-    let currentApi = localStorage.getItem("sigma_api_url") || "https://mountain-revision-conservative-quest.trycloudflare.com";
-    document.getElementById("api-url").value = currentApi;
-
-    function saveApiUrl() {
-      let val = document.getElementById("api-url").value.trim().replace(/\/$/, "");
-      if (!val) val = "status.json";
-      currentApi = val;
-      localStorage.setItem("sigma_api_url", currentApi);
-      update();
-    }
 
     function formatNumber(n) {
       if (!n) return "0";
@@ -381,27 +366,10 @@
       return (n / 1000000).toFixed(2) + "kk gp";
     }
 
-    async function sendAction(botId, action, params = {}) {
-      if (currentApi.endsWith("status.json")) {
-        alert("Modo estático. Conecte ao túnel ou IP da VPS para enviar comandos.");
-        return;
-      }
-      try {
-        const res = await fetch(`${currentApi}/api/action`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ botId, action, ...params })
-        });
-        if (res.ok) update();
-      } catch (e) {
-        alert("Erro ao executar ação: " + e);
-      }
-    }
 
     async function update() {
       try {
-        const url = currentApi.endsWith(".json") ? currentApi : `${currentApi}/api/status`;
-        const res = await fetch(url);
+        const res = await fetch("./status.json?t=" + Date.now(), { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
 
@@ -438,7 +406,7 @@
       const container = document.getElementById('bots-grid');
       container.innerHTML = '';
 
-      accounts.forEach(a => {
+      accounts.forEach((a, index) => {
         const card = document.createElement('div');
         card.className = 'bot-card';
 
@@ -450,10 +418,10 @@
           <div class="card-head">
             <div>
               <div class="char-name">
-                ${a.trainerName || a.alias || a.id}
+                Treinador #${index + 1}
                 <span class="badge badge-purple">Nv. ${a.level || 1}</span>
               </div>
-              <span class="char-id">${a.id} • ${a.mapName || 'Mapa Atual'}</span>
+              <span class="char-id">${a.mapName || 'Mapa Atual'}</span>
             </div>
             ${statusBadge}
           </div>
@@ -507,11 +475,6 @@
 
           <div class="log-box">${a.lastAction || 'Aguardando ação...'}</div>
 
-          <div class="actions">
-            <button class="green" onclick="sendAction('${a.id}', 'heal')">🏥 Curar</button>
-            <button onclick="sendAction('${a.id}', 'claim')">🎁 Coletar</button>
-            <button onclick="sendAction('${a.id}', 'toggle-autohunt', { on: ${!a.autoHuntActive} })">${a.autoHuntActive ? 'Pausar Hunt' : 'Ativar Hunt'}</button>
-          </div>
         `;
 
         container.appendChild(card);
