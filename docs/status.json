@@ -22,7 +22,8 @@
       "inHunt": true,
       "kills": 48,
       "killsPerMin": 17.597503900156006,
-      "lastAction": "Autenticando...",
+      "lastAction": "Erro: falha ao obter ticket: ticket falhou com status 409: {\"error\":\"aceite os termos e a política de privacidade para continuar jogando\",\"code\":\"legal-pending\",\"pending\":[\"terms\",\"privacy\"]} (tentando em 30s)",
+      "lastError": "falha ao obter ticket: ticket falhou com status 409: {\"error\":\"aceite os termos e a política de privacidade para continuar jogando\",\"code\":\"legal-pending\",\"pending\":[\"terms\",\"privacy\"]}",
       "leaderHp": 231,
       "leaderLevel": 83,
       "leaderMaxHp": 1728,
@@ -147,6 +148,6 @@
       "xpToNextLevel": 800200
     }
   ],
-  "ramMB": 2.0887908935546875,
-  "serverTime": 1791954964567
+  "ramMB": 2.2067413330078125,
+  "serverTime": 1791955084710
 }
