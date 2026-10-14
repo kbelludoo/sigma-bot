@@ -101,13 +101,13 @@
     {
       "alias": "Treinador #3",
       "autoHuntActive": true,
-      "bestiaryCompletedCount": 11,
+      "bestiaryCompletedCount": 90,
       "bestiaryLevel": 4,
       "bestiaryNextPoints": 3410,
-      "bestiaryPendingCount": 51,
-      "bestiaryPoints": 1350,
+      "bestiaryPendingCount": 4,
+      "bestiaryPoints": 3325,
       "bestiaryTargetKills": 120,
-      "bestiaryTotalKills": 47341,
+      "bestiaryTotalKills": 47348,
       "captures": 0,
       "connectedAt": 1791896976994,
       "diamonds": 0,
@@ -120,8 +120,8 @@
       "inHunt": true,
       "kills": 47,
       "killsPerMin": 31.16022099447514,
-      "lastAction": "Erro: falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance) (tentando em 30s)",
-      "lastError": "falha no login: login falhou (503): Manutenção das 17:00 até 20:00 no máximo (GTM-3) Aviso Discord (código: maintenance)",
+      "lastAction": "Erro: falha ao obter ticket: ticket falhou com status 409: {\"error\":\"aceite os termos e a política de privacidade para continuar jogando\",\"code\":\"legal-pending\",\"pending\":[\"terms\",\"privacy\"]} (tentando em 30s)",
+      "lastError": "falha ao obter ticket: ticket falhou com status 409: {\"error\":\"aceite os termos e a política de privacidade para continuar jogando\",\"code\":\"legal-pending\",\"pending\":[\"terms\",\"privacy\"]}",
       "leaderHp": 212,
       "leaderLevel": 127,
       "leaderMaxHp": 2592,
@@ -148,6 +148,6 @@
       "xpToNextLevel": 800200
     }
   ],
-  "ramMB": 2.2495651245117188,
-  "serverTime": 1791937325015
+  "ramMB": 2.5304183959960938,
+  "serverTime": 1791937444422
 }
