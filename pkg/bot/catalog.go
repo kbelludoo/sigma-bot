@@ -312,7 +312,8 @@ func (c *Catalog) GetOptimalHuntForLeader(level int, leaderSpeciesID int) (strin
 }
 
 // GetNextBestiaryHunt localiza o próximo mapa de caça com abates pendentes para o nível do treinador
-func (c *Catalog) GetNextBestiaryHunt(trainerLevel int, killsBySpecies map[int]int, targetKills int) (string, string, int) {
+// aplicando o Filtro de Sobrevivência Elemental baseado no Pokémon líder
+func (c *Catalog) GetNextBestiaryHunt(trainerLevel int, killsBySpecies map[int]int, targetKills int, leaderSpeciesID int) (string, string, int) {
 	if targetKills <= 0 {
 		targetKills = 120
 	}
@@ -324,10 +325,16 @@ func (c *Catalog) GetNextBestiaryHunt(trainerLevel int, killsBySpecies map[int]i
 		speciesID       int
 		speciesName     string
 		kills           int
+		survivalTier    int
+		isSuicidal      bool
+		offMult         float64
+		defRisk         float64
 	}
 
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
+	leader, hasLeader := c.speciesByID[leaderSpeciesID]
 
 	var candidates []Candidate
 	for _, h := range c.data.Hunts {
@@ -340,6 +347,44 @@ func (c *Catalog) GetNextBestiaryHunt(trainerLevel int, killsBySpecies map[int]i
 		primaryID := h.Card.Species[0].ID
 		k := killsBySpecies[primaryID]
 		if k < targetKills {
+			off := 1.0
+			risk := 1.0
+			if hasLeader && len(leader.Types) > 0 {
+				totalOff := 0.0
+				totalRisk := 0.0
+				count := 0
+				for _, sRef := range h.Card.Species {
+					if wild, ok := c.speciesByID[sRef.ID]; ok {
+						totalOff += GetBestOffensiveMultiplier(leader.Types, wild.Types)
+						totalRisk += GetIncomingRisk(leader.Types, wild.Types)
+						count++
+					}
+				}
+				if count > 0 {
+					off = totalOff / float64(count)
+					risk = totalRisk / float64(count)
+				}
+			}
+
+			// Classificação de Sobrevivência Elemental
+			// isSuicidal: Mobs de nível alto (>=50) onde tomamos dano crítico (>=2.0x) ou tomamos mais de 1.2x e damos menos de 1.0x
+			isSuicidal := h.MinTrainerLevel >= 50 && (risk >= 2.0 || (risk > 1.2 && off < 1.0))
+			survivalTier := 3 // Padrão neutro
+
+			if off >= 1.5 && risk <= 1.0 {
+				survivalTier = 0 // Dominante: Super efetivo ofensivo e defensivamente seguro
+			} else if off >= 1.0 && risk <= 1.0 {
+				survivalTier = 1 // Seguro neutro
+			} else if off >= 1.5 && risk < 2.0 {
+				survivalTier = 2 // Alta vantagem ofensiva, risco moderado
+			} else if off >= 1.0 && risk < 2.0 {
+				survivalTier = 3 // Neutro com risco moderado
+			} else if off < 1.0 && risk <= 1.0 {
+				survivalTier = 4 // Dano reduzido mas sobrevive com segurança
+			} else {
+				survivalTier = 5 // Perigoso ou suicida
+			}
+
 			candidates = append(candidates, Candidate{
 				slug:            h.Slug,
 				name:            h.Name,
@@ -347,6 +392,10 @@ func (c *Catalog) GetNextBestiaryHunt(trainerLevel int, killsBySpecies map[int]i
 				speciesID:       primaryID,
 				speciesName:     c.GetSpeciesName(primaryID),
 				kills:           k,
+				survivalTier:    survivalTier,
+				isSuicidal:      isSuicidal,
+				offMult:         off,
+				defRisk:         risk,
 			})
 		}
 	}
@@ -355,10 +404,18 @@ func (c *Catalog) GetNextBestiaryHunt(trainerLevel int, killsBySpecies map[int]i
 		return "", "", 0
 	}
 
-	// Ordena por:
-	// 1. MinTrainerLevel ASC (limpa dos níveis mais baixos aos mais altos rapidamente)
-	// 2. Kills DESC (se já tem 80/120 abates, finaliza logo antes de começar do zero)
+	// Ordenação tática com Filtro de Sobrevivência:
+	// 1. Não suicida antes de suicida (evita que o bot fique morrendo em loop contra mobs 4.0x mais fortes)
+	// 2. survivalTier ASC (favorece rotas com vantagem super-efetiva de 2.0x a 4.0x)
+	// 3. minTrainerLevel ASC (limpa dos níveis mais baixos aos mais altos)
+	// 4. Kills DESC (se já tem 80/120 abates, finaliza antes de começar do zero)
 	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].isSuicidal != candidates[j].isSuicidal {
+			return !candidates[i].isSuicidal // false (seguro) vem antes de true (suicida)
+		}
+		if candidates[i].survivalTier != candidates[j].survivalTier {
+			return candidates[i].survivalTier < candidates[j].survivalTier
+		}
 		if candidates[i].minTrainerLevel != candidates[j].minTrainerLevel {
 			return candidates[i].minTrainerLevel < candidates[j].minTrainerLevel
 		}
@@ -366,7 +423,8 @@ func (c *Catalog) GetNextBestiaryHunt(trainerLevel int, killsBySpecies map[int]i
 	})
 
 	picked := candidates[0]
-	desc := fmt.Sprintf("%s (%s) [Bestiário: %d/%d abates]", picked.name, picked.speciesName, picked.kills, targetKills)
+	desc := fmt.Sprintf("%s (%s) [Bestiário: %d/%d abates │ Vantagem: %.1fx (Risco: %.1fx)]",
+		picked.name, picked.speciesName, picked.kills, targetKills, picked.offMult, picked.defRisk)
 	return picked.slug, desc, len(candidates)
 }
 

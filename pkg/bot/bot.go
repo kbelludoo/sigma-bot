@@ -126,7 +126,13 @@ func (b *Bot) GetStatus() AccountStatus {
 		st.HPPercent = float64(st.HP) / float64(st.MaxHP) * 100.0
 	}
 	if st.XPToNextLevel > 0 {
-		st.XPPercent = float64(st.XP) / float64(st.XPToNextLevel) * 100.0
+		pct := float64(st.XPIntoLevel) / float64(st.XPToNextLevel) * 100.0
+		if pct > 100.0 {
+			pct = 100.0
+		} else if pct < 0.0 {
+			pct = 0.0
+		}
+		st.XPPercent = pct
 	}
 	return st
 }
@@ -342,6 +348,7 @@ func (b *Bot) updateSnapshot(snap *GameStateData) {
 	b.status.TrainerName = snap.Trainer.Name
 	b.status.Level = snap.Trainer.Level
 	b.status.XP = snap.Trainer.XP
+	b.status.XPIntoLevel = snap.Trainer.XPIntoLevel
 	b.status.XPToNextLevel = snap.Trainer.XPToNextLevel
 	b.status.HP = snap.Trainer.HP
 	b.status.MaxHP = snap.Trainer.MaxHP
@@ -573,7 +580,7 @@ func (b *Bot) tickAutomation(sock *client.SocketClient) {
 		}
 		b.mu.RUnlock()
 
-		nextSlug, reason, pending := b.catalog.GetNextBestiaryHunt(b.status.Level, killsCopy, cfg.BestiaryTargetKills)
+		nextSlug, reason, pending := b.catalog.GetNextBestiaryHunt(b.status.Level, killsCopy, cfg.BestiaryTargetKills, b.status.LeaderSpeciesID)
 		b.mu.Lock()
 		b.status.BestiaryPendingCount = pending
 		b.mu.Unlock()

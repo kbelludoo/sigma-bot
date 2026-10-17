@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/cookiejar"
+	"strings"
 	"time"
 )
 
@@ -154,6 +155,26 @@ func (c *APIClient) GetTicket(accessToken string) (*TicketResponse, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusConflict && strings.Contains(string(respBytes), "legal-pending") {
+			_ = c.AcceptTerms(accessToken)
+			reqRetry, err := http.NewRequest("POST", BaseURL+"/ws/ticket", bytes.NewReader([]byte("{}")))
+			if err == nil {
+				reqRetry.Header.Set("User-Agent", UserAgent)
+				reqRetry.Header.Set("Origin", OriginURL)
+				reqRetry.Header.Set("Referer", OriginURL+"/")
+				reqRetry.Header.Set("Content-Type", "application/json")
+				reqRetry.Header.Set("Authorization", "Bearer "+accessToken)
+				if retryResp, err := c.httpClient.Do(reqRetry); err == nil {
+					defer retryResp.Body.Close()
+					if retryBytes, err := io.ReadAll(retryResp.Body); err == nil && retryResp.StatusCode == http.StatusOK {
+						var ticketResp TicketResponse
+						if err := json.Unmarshal(retryBytes, &ticketResp); err == nil && ticketResp.Ticket != "" {
+							return &ticketResp, nil
+						}
+					}
+				}
+			}
+		}
 		return nil, fmt.Errorf("ticket falhou com status %d: %s", resp.StatusCode, string(respBytes))
 	}
 
@@ -248,5 +269,26 @@ func (c *APIClient) GetBestiary(accessToken string) (*BestiaryResponse, error) {
 		return nil, err
 	}
 	return &data, nil
+}
+
+// AcceptTerms envia a confirmação dos termos de uso e privacidade
+func (c *APIClient) AcceptTerms(accessToken string) error {
+	payload := []byte(`{"termsVersion":"2026-10-13","privacyVersion":"2026-10-14","isAdult":true}`)
+	req, err := http.NewRequest("POST", BaseURL+"/legal/accept", bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("Origin", OriginURL)
+	req.Header.Set("Referer", OriginURL+"/")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
 }
 

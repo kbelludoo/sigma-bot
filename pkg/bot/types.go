@@ -31,6 +31,7 @@ type AccountStatus struct {
 	Strategy             string  `json:"strategy,omitempty"`
 	Level                int     `json:"level"`
 	XP                   int     `json:"xp"`
+	XPIntoLevel          int     `json:"xpIntoLevel"`
 	XPToNextLevel        int     `json:"xpToNextLevel"`
 	XPPercent            float64 `json:"xpPercent"`
 	HP                   int     `json:"hp"`
