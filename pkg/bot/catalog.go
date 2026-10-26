@@ -423,6 +423,9 @@ func (c *Catalog) GetNextBestiaryHunt(trainerLevel int, killsBySpecies map[int]i
 	})
 
 	picked := candidates[0]
+	if picked.isSuicidal {
+		return "", fmt.Sprintf("âš ï¸ Alvos restantes do BestiÃ¡rio sÃ£o suicidas para %s (Risco: %.1fx). Farmando rota ideal de XP!", c.GetSpeciesName(leaderSpeciesID), picked.defRisk), len(candidates)
+	}
 	desc := fmt.Sprintf("%s (%s) [Bestiário: %d/%d abates │ Vantagem: %.1fx (Risco: %.1fx)]",
 		picked.name, picked.speciesName, picked.kills, targetKills, picked.offMult, picked.defRisk)
 	return picked.slug, desc, len(candidates)

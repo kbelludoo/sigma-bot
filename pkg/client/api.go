@@ -292,3 +292,46 @@ func (c *APIClient) AcceptTerms(accessToken string) error {
 	return nil
 }
 
+
+type StoragePokemon struct {
+	PokemonID string `json:"pokemonId"`
+	SpeciesID int    `json:"speciesId"`
+	Level     int    `json:"level"`
+	HP        int    `json:"hp"`
+	MaxHP     int    `json:"maxHp"`
+	Shiny     bool   `json:"shiny"`
+	Locked    bool   `json:"locked"`
+}
+
+type StorageResponse struct {
+	Box []StoragePokemon `json:"box"`
+}
+
+// GetStorage obtém os dados do depósito/box do jogador
+func (c *APIClient) GetStorage(accessToken string) (*StorageResponse, error) {
+	req, err := http.NewRequest("GET", BaseURL+"/storage", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("Origin", OriginURL)
+	req.Header.Set("Referer", OriginURL+"/")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("falha em /storage (%d): %s", resp.StatusCode, string(body))
+	}
+
+	var data StorageResponse
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+	return &data, nil
+}

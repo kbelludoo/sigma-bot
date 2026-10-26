@@ -1,0 +1,36 @@
+# Mandatory Global MB-VM & Go Solo Agent Rule for Cursor
+
+## MODO PADRÃO: AUTO (Agent)
+- Cursor DEVE SEMPRE iniciar em modo Auto (Agent mode).
+- NUNCA usar modo Ask ou Composer como padrão.
+- Execução direta e autônoma: edições, compilações e validações automáticas.
+
+## REGRAS GERAIS & BEST PRACTICES (Go 1.27 + Learn-Go Architecture)
+1. SOLO AGENT ONLY: Resolução direta por um único agente CLI. Sem orquestradores intermediários nem sobrecarga de delegação.
+2. GO PRIMARY & IDIOMÁTICO:
+   - Modern Go: `slog` para logs estruturados, `slices`/`maps` da stdlib.
+   - **Error Wrapping (%w only):** Sempre use `fmt.Errorf("context: %w", err)` para preservar a cadeia de `errors.Is`/`errors.As`. Proibido usar `%v` para erros.
+   - **Consumer-side Interfaces:** Defina interfaces no pacote consumidor (*"accept interfaces, return structs"*). Evite acoplamento rígido definindo interfaces no produtor.
+   - **Goroutine Leak Prevention:** Goroutines DEVEM ter saída previsível e determinística escutando `ctx.Done()`.
+   - `ctx context.Context` sempre como primeiro argumento em chamadas de I/O, rede ou goroutines.
+   - Tratamento de erro explícito: `if err != nil` e early return na margem esquerda (zero `else`).
+   - Tipagem estrita: Proibido `any`/`interface{}` vazio sem justificativa de codec.
+3. COMPILER AS GROUND TRUTH & TESTES DETERMINÍSTICOS:
+   - **Comandos Exatos de Teste:** `go test -race -count=1 -v ./...` (o `-count=1` elimina falsos positivos por cache do Go).
+   - Validação contínua com `go vet ./...`.
+4. ROOT-CAUSE FIRST & MINIMAL DIFFS:
+   - Ataque sempre a causa-raiz do problema; nunca aplique "curativos" em sintomas.
+   - Edições cirúrgicas e mínimas: nunca reescreva arquivos inteiros quando um diff direcionado resolve.
+   - Se encontrar bug: crie um teste reproduzindo a falha primeiro, depois implemente a correção.
+5. MB-VM & MBVM-DB FIRST (SINGLE-INGESTION & SMART SLICING):
+   - **Single-Ingestion Law:** Arquivos pesados (Protobuf, catálogos JSON, pacotes inteiros, dados de jogos) são processados uma única vez em bancos binários `.mbvmdb` (`codebase.mbvmdb`, `game.mbvmdb`).
+   - **A IA NUNCA lê arquivos brutos de dezenas de milhares de tokens.** Sempre execute `mbvm-db slice <db> <termo/símbolo> [depth]` (retorna a fatia exata em 1–3ms com 60–200 tokens).
+   - **Camada 1 (AST):** Consulte `codebase.mbvm` para obter assinaturas globais antes de ler arquivos brutos.
+   - **Camada 2 (MCP):** Ferramentas MCP comprimidas para assinaturas tipadas de 1 linha.
+   - **Camada 3 (Runtime/DB):** Cache e runtime gravados como micro-bytecode no SQLite (`page_bytecodes.db`).
+6. MODULARITY: Limite estrito de 400 linhas por arquivo.
+7. GIT GLOBAL PRE-COMMIT:
+   - Hook global `~/.git-hooks/pre-commit` recompila `codebase.mbvm` via `go-tools mbvm .` e valida integridade via `mbvm-db inspect .` a cada commit.
+
+## Fonte Canônica
+Seguir `AGENTS.mbvm` na raiz do projeto.

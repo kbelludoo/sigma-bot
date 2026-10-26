@@ -2,19 +2,21 @@ package bot
 
 // AccountConfig contém as configurações de uma conta individual
 type AccountConfig struct {
-	ID          string `json:"id"`                    // Identificador único (ex: "acc1")
-	Name        string `json:"name"`                  // Nome amigável / Alias
-	Email       string `json:"email"`                 // E-mail de login
-	Password    string `json:"password"`              // Senha
-	HuntSlug    string `json:"huntSlug,omitempty"`    // Rota/Monstro alvo para caçar (ex: "caterpie", "bellsprout")
-	AutoHunt    bool   `json:"autoHunt"`              // Ativar auto-hunt no servidor (default: true)
-	AutoCatch   bool   `json:"autoCatch"`             // Tentar capturar pokémons selvagens (default: true)
-	BallID      int    `json:"ballId,omitempty"`      // Pokébola padrão (1: Poke Ball, 2: Great Ball, 3: Super, 4: Ultra)
-	ShinyBallID int    `json:"shinyBallId,omitempty"` // Pokébola para Shiny (5: Master Ball, 4: Ultra Ball)
-	AutoHeal    bool   `json:"autoHeal"`              // Curar no Centro Pokémon ao ficar com pouca vida (default: true)
-	AutoDaily   bool   `json:"autoDaily"`             // Coletar login diário, recompensas de quests e tarefas (default: true)
-	AutoSpin    bool   `json:"autoSpin"`              // Girar a roda da sorte quando houver giros (default: true)
-	AutoNap     bool   `json:"autoNap,omitempty"`     // Gerenciar soneca/descanso automático (default: false)
+	ID                  string `json:"id"`                    // Identificador único (ex: "acc1")
+	Name                string `json:"name"`                  // Nome amigável / Alias
+	Email               string `json:"email"`                 // E-mail de login
+	Password            string `json:"password"`              // Senha
+	HuntSlug            string `json:"huntSlug,omitempty"`    // Rota/Monstro alvo para caçar (ex: "caterpie", "bellsprout")
+	AutoHunt            bool   `json:"autoHunt"`              // Ativar auto-hunt no servidor (default: true)
+	AutoCatch           bool   `json:"autoCatch"`             // Tentar capturar pokémons selvagens (default: true)
+	BallID              int    `json:"ballId,omitempty"`      // Pokébola padrão (1: Poke Ball, 2: Great Ball, 3: Super, 4: Ultra)
+	ShinyBallID         int    `json:"shinyBallId,omitempty"` // Pokébola para Shiny (5: Master Ball, 4: Ultra Ball)
+	AutoHeal            bool   `json:"autoHeal"`              // Curar no Centro Pokémon ao ficar com pouca vida (default: true)
+	AutoDaily           bool   `json:"autoDaily"`             // Coletar login diário, recompensas de quests e tarefas (default: true)
+	AutoSpin            bool   `json:"autoSpin"`              // Girar a roda da sorte quando houver giros (default: true)
+	AutoNap             bool   `json:"autoNap,omitempty"`     // Gerenciar soneca/descanso automático (default: false)
+	AutoEvolve          bool   `json:"autoEvolve"`            // Evolução automática de Pokémons prontos (default: true)
+	AutoFillTeam        bool   `json:"autoFillTeam"`          // Completar os 6 slots da equipe retirando do box (default: true)
 	Strategy            string `json:"strategy,omitempty"`            // "rush" (padrão de XP) ou "bestiary" (tour completo de degraus)
 	BestiaryTargetKills int    `json:"bestiaryTargetKills,omitempty"` // Meta de abates por monstro no modo bestiário (default: 120)
 	BindIP              string `json:"bindIP,omitempty"`              // IP local para bind da conexão (ex: "10.0.0.191", "10.0.0.49")
@@ -23,45 +25,48 @@ type AccountConfig struct {
 
 // AccountStatus reflete o estado em tempo real da conta para exibição no Terminal e no Dashboard Web
 type AccountStatus struct {
-	ID                   string  `json:"id"`
-	Alias                string  `json:"alias"`
-	TrainerName          string  `json:"trainerName"`
-	BindIP               string  `json:"bindIp,omitempty"`
-	OutboundIP           string  `json:"outboundIp,omitempty"`
-	Strategy             string  `json:"strategy,omitempty"`
-	Level                int     `json:"level"`
-	XP                   int     `json:"xp"`
-	XPIntoLevel          int     `json:"xpIntoLevel"`
-	XPToNextLevel        int     `json:"xpToNextLevel"`
-	XPPercent            float64 `json:"xpPercent"`
-	HP                   int     `json:"hp"`
-	MaxHP                int     `json:"maxHp"`
-	HPPercent            float64 `json:"hpPercent"`
-	Gold                 int     `json:"gold"`
-	Diamonds             int     `json:"diamonds"`
-	InGame               bool    `json:"inGame"`
-	InHunt               bool    `json:"inHunt"`
-	MapSlug              string  `json:"mapSlug"`
-	MapName              string  `json:"mapName"`
-	LeaderSpeciesID      int     `json:"leaderSpeciesId,omitempty"`
-	LeaderName           string  `json:"leaderName"`
-	LeaderLevel          int     `json:"leaderLevel"`
-	LeaderHP             int     `json:"leaderHp"`
-	LeaderMaxHP          int     `json:"leaderMaxHp"`
-	LeaderShiny          bool    `json:"leaderShiny"`
-	WildTarget           string  `json:"wildTarget"`
-	WildHP               int     `json:"wildHp"`
-	WildMaxHP            int     `json:"wildMaxHp"`
-	WildLevel            int     `json:"wildLevel"`
-	WildShiny            bool    `json:"wildShiny"`
-	AutoHuntActive       bool    `json:"autoHuntActive"`
-	Kills                int     `json:"kills"`
-	Captures             int     `json:"captures"`
-	Shinies              int     `json:"shinies"`
-	GoldFound            int     `json:"goldFound"`
-	TrainerXPGained      int     `json:"trainerXpGained"`
-	KillsPerMin          float64 `json:"killsPerMin"`
-	XPPerHour            float64 `json:"xpPerHour"`
+	ID                     string  `json:"id"`
+	Alias                  string  `json:"alias"`
+	TrainerName            string  `json:"trainerName"`
+	BindIP                 string  `json:"bindIp,omitempty"`
+	OutboundIP             string  `json:"outboundIp,omitempty"`
+	Strategy               string  `json:"strategy,omitempty"`
+	Level                  int     `json:"level"`
+	XP                     int     `json:"xp"`
+	XPIntoLevel            int     `json:"xpIntoLevel"`
+	XPToNextLevel          int     `json:"xpToNextLevel"`
+	XPPercent              float64 `json:"xpPercent"`
+	HP                     int     `json:"hp"`
+	MaxHP                  int     `json:"maxHp"`
+	HPPercent              float64 `json:"hpPercent"`
+	Gold                   int     `json:"gold"`
+	Diamonds               int     `json:"diamonds"`
+	VipActive              bool    `json:"vipActive"`
+	VipUntil               int64   `json:"vipUntil,omitempty"`
+	VipExpiringSoon        bool    `json:"vipExpiringSoon,omitempty"`
+	InGame                 bool    `json:"inGame"`
+	InHunt                 bool    `json:"inHunt"`
+	MapSlug                string  `json:"mapSlug"`
+	MapName                string  `json:"mapName"`
+	LeaderSpeciesID        int     `json:"leaderSpeciesId,omitempty"`
+	LeaderName             string  `json:"leaderName"`
+	LeaderLevel            int     `json:"leaderLevel"`
+	LeaderHP               int     `json:"leaderHp"`
+	LeaderMaxHP            int     `json:"leaderMaxHp"`
+	LeaderShiny            bool    `json:"leaderShiny"`
+	WildTarget             string  `json:"wildTarget"`
+	WildHP                 int     `json:"wildHp"`
+	WildMaxHP              int     `json:"wildMaxHp"`
+	WildLevel              int     `json:"wildLevel"`
+	WildShiny              bool    `json:"wildShiny"`
+	AutoHuntActive         bool    `json:"autoHuntActive"`
+	Kills                  int     `json:"kills"`
+	Captures               int     `json:"captures"`
+	Shinies                int     `json:"shinies"`
+	GoldFound              int     `json:"goldFound"`
+	TrainerXPGained        int     `json:"trainerXpGained"`
+	KillsPerMin            float64 `json:"killsPerMin"`
+	XPPerHour              float64 `json:"xpPerHour"`
 	BestiaryLevel          int     `json:"bestiaryLevel,omitempty"`
 	BestiaryPoints         int     `json:"bestiaryPoints,omitempty"`
 	BestiaryNextPoints     int     `json:"bestiaryNextPoints,omitempty"`
@@ -70,10 +75,11 @@ type AccountStatus struct {
 	BestiaryCurrentKills   int     `json:"bestiaryCurrentKills,omitempty"`
 	BestiaryCompletedCount int     `json:"bestiaryCompletedCount,omitempty"`
 	BestiaryPendingCount   int     `json:"bestiaryPendingCount,omitempty"`
-	LastAction           string  `json:"lastAction"`
-	LastError            string  `json:"lastError,omitempty"`
-	ConnectedAt          int64   `json:"connectedAt"`
-	UpdatedAt            int64   `json:"updatedAt"`
+	TeamSize               int     `json:"teamSize"`
+	LastAction             string  `json:"lastAction"`
+	LastError              string  `json:"lastError,omitempty"`
+	ConnectedAt            int64   `json:"connectedAt"`
+	UpdatedAt              int64   `json:"updatedAt"`
 }
 
 // InventoryItem representa um item de saque ou suprimento no inventário
@@ -109,6 +115,24 @@ type EventData struct {
 	Success   bool   `json:"success,omitempty"`
 }
 
+type ArenaPrizeData struct {
+	ID string `json:"id"`
+}
+
+type ArenaModeData struct {
+	ID     string           `json:"id"`
+	Name   string           `json:"name"`
+	Open   bool             `json:"open"`
+	Prizes []ArenaPrizeData `json:"prizes"`
+	Unseen int              `json:"unseen"`
+}
+
+type ArenaStateData struct {
+	Modes  []ArenaModeData  `json:"modes"`
+	Prizes []ArenaPrizeData `json:"prizes"`
+	Unseen int              `json:"unseen"`
+}
+
 type GameStateData struct {
 	Trainer    TrainerData        `json:"trainer"`
 	Pokedex    PokedexData        `json:"pokedex"`
@@ -125,20 +149,24 @@ type GameStateData struct {
 	DailyLogin *DailyLoginData    `json:"dailyLogin"`
 	Quests     []QuestData        `json:"quests"`
 	Inventory  []InventoryItem    `json:"inventory"`
+	Arena      *ArenaStateData    `json:"arena,omitempty"`
 }
 
 type TrainerData struct {
-	Name           string `json:"name"`
-	Level          int    `json:"level"`
-	XP             int    `json:"xp"`
-	XPIntoLevel    int    `json:"xpIntoLevel"`
-	XPToNextLevel  int    `json:"xpToNextLevel"`
-	HP             int    `json:"hp"`
-	MaxHP          int    `json:"maxHp"`
-	TotalKills     int    `json:"totalKills"`
-	Gold           int    `json:"gold"`
-	Diamonds       int    `json:"diamonds"`
-	WheelSpins     map[string]int `json:"wheelSpins"`
+	Name          string         `json:"name"`
+	Level         int            `json:"level"`
+	XP            int            `json:"xp"`
+	XPIntoLevel   int            `json:"xpIntoLevel"`
+	XPToNextLevel int            `json:"xpToNextLevel"`
+	HP            int            `json:"hp"`
+	MaxHP         int            `json:"maxHp"`
+	TotalKills    int            `json:"totalKills"`
+	Gold          int            `json:"gold"`
+	Diamonds      int            `json:"diamonds"`
+	DiamondsBonus int            `json:"diamondsBonus,omitempty"`
+	VipUntil      *int64         `json:"vipUntil,omitempty"`
+	VipExpiringSoon bool         `json:"vipExpiringSoon,omitempty"`
+	WheelSpins    map[string]int `json:"wheelSpins"`
 }
 
 type PokedexData struct {
@@ -158,35 +186,35 @@ type LeaderData struct {
 }
 
 type HuntData struct {
-	MapSlug       string      `json:"mapSlug"`
-	WildSpeciesID int         `json:"wildSpeciesId"`
-	WildHP        int         `json:"wildHp"`
-	WildMaxHP     int         `json:"wildMaxHp"`
-	WildShiny     bool        `json:"wildShiny"`
-	WildLevel     int         `json:"wildLevel"`
-	Wilds         []WildData  `json:"wilds"`
-	Engaged       bool        `json:"engaged"`
-	TrainerStands bool        `json:"trainerStands"`
+	MapSlug       string     `json:"mapSlug"`
+	WildSpeciesID int        `json:"wildSpeciesId"`
+	WildHP        int        `json:"wildHp"`
+	WildMaxHP     int        `json:"wildMaxHp"`
+	WildShiny     bool       `json:"wildShiny"`
+	WildLevel     int        `json:"wildLevel"`
+	Wilds         []WildData `json:"wilds"`
+	Engaged       bool       `json:"engaged"`
+	TrainerStands bool       `json:"trainerStands"`
 }
 
 type WildData struct {
-	ID        int    `json:"id"`
-	SpeciesID int    `json:"speciesId"`
-	Level     int    `json:"level"`
-	HP        int    `json:"hp"`
-	MaxHP     int    `json:"maxHp"`
-	Shiny     bool   `json:"shiny"`
-	Dead      bool   `json:"dead"`
-	InRange   bool   `json:"inRange"`
+	ID        int  `json:"id"`
+	SpeciesID int  `json:"speciesId"`
+	Level     int  `json:"level"`
+	HP        int  `json:"hp"`
+	MaxHP     int  `json:"maxHp"`
+	Shiny     bool `json:"shiny"`
+	Dead      bool `json:"dead"`
+	InRange   bool `json:"inRange"`
 }
 
 type BotPolicyData struct {
-	AutoCatch       bool  `json:"autoCatch"`
-	BallID          *int  `json:"ballId"`
-	ShinyBallID     *int  `json:"shinyBallId"`
-	CaptureShiny    bool  `json:"captureShiny"`
-	LureMin         int   `json:"lureMin"`
-	FallbackAnyBall bool  `json:"fallbackAnyBall"`
+	AutoCatch       bool `json:"autoCatch"`
+	BallID          *int `json:"ballId"`
+	ShinyBallID     *int `json:"shinyBallId"`
+	CaptureShiny    bool `json:"captureShiny"`
+	LureMin         int  `json:"lureMin"`
+	FallbackAnyBall bool `json:"fallbackAnyBall"`
 }
 
 type AnalyzerData struct {
@@ -223,13 +251,35 @@ type QuestData struct {
 	Claimed bool `json:"claimed"`
 }
 
+type EvolutionData struct {
+	Ready        bool    `json:"ready"`
+	ToSpeciesID  int     `json:"toSpeciesId"`
+	CanPayStones bool    `json:"canPayStones"`
+	BlockedBy    *string `json:"blockedBy"`
+}
+
 type TeamPokemonData struct {
+	PokemonID string         `json:"pokemonId"`
+	SpeciesID int            `json:"speciesId"`
+	Level     int            `json:"level"`
+	HP        int            `json:"hp"`
+	MaxHP     int            `json:"maxHp"`
+	Shiny     bool           `json:"shiny"`
+	Evolution *EvolutionData `json:"evolution,omitempty"`
+}
+
+type StoragePokemon struct {
 	PokemonID string `json:"pokemonId"`
 	SpeciesID int    `json:"speciesId"`
 	Level     int    `json:"level"`
 	HP        int    `json:"hp"`
 	MaxHP     int    `json:"maxHp"`
 	Shiny     bool   `json:"shiny"`
+	Locked    bool   `json:"locked"`
+}
+
+type StorageResponse struct {
+	Box []StoragePokemon `json:"box"`
 }
 
 // Intenções enviadas ao servidor
@@ -283,4 +333,20 @@ type SpinWheelIntent struct {
 	Type    string `json:"type"` // "spinWheel"
 	WheelID string `json:"wheelId"`
 	Times   int    `json:"times"`
+}
+
+type EvolveIntent struct {
+	Type            string `json:"type"` // "evolve"
+	PokemonID       string `json:"pokemonId"`
+	TargetSpeciesID int    `json:"targetSpeciesId"`
+}
+
+type WithdrawPokemonIntent struct {
+	Type      string `json:"type"` // "withdrawPokemon"
+	PokemonID string `json:"pokemonId"`
+}
+
+type DepositPokemonIntent struct {
+	Type      string `json:"type"` // "depositPokemon"
+	PokemonID string `json:"pokemonId"`
 }

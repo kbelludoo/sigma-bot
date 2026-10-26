@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"bot-sigma/pkg/bot"
+	"bot-sigma/pkg/pool"
 	"bot-sigma/pkg/server"
 )
 
@@ -158,6 +159,14 @@ func main() {
 		go b.Run(ctx)
 	}
 
+	// Iniciar o Coordenador de Gold Pooling & Auto-VIP
+	var botProviders []pool.BotProvider
+	for _, b := range manager.bots {
+		botProviders = append(botProviders, b)
+	}
+	coordinator := pool.NewCoordinator(botProviders, []string{"acc3", "acc2", "acc1"})
+	go coordinator.Start(ctx)
+
 	// 2. Servidor Web Dashboard (Porta 3002 padrão, ou variável de ambiente PORT)
 	port := 3002
 	if pStr := os.Getenv("PORT"); pStr != "" {
@@ -216,6 +225,10 @@ func main() {
 					if st.InGame {
 						statusBadge = "\033[1;32m[ EM JOGO ]\033[0m"
 					}
+					vipBadge := "\033[0;90m[ SEM VIP ]\033[0m"
+					if st.VipActive {
+						vipBadge = "\033[1;33m[ ðŸ‘‘ VIP ATIVO ]\033[0m"
+					}
 
 					name := st.TrainerName
 					if name == "" {
@@ -229,7 +242,7 @@ func main() {
 					if st.OutboundIP != "" {
 						ipInfo = fmt.Sprintf(" │ IP: \033[1;35m%s\033[0m", st.OutboundIP)
 					}
-					fmt.Printf("[%s: \033[1m%s\033[0m (Nv. %d)%s] %s\n", st.ID, name, st.Level, ipInfo, statusBadge)
+					fmt.Printf("[%s: \033[1m%s\033[0m (Nv. %d)%s] %s %s\n", st.ID, name, st.Level, ipInfo, statusBadge, vipBadge)
 					fmt.Printf("  🗺️  Rota: \033[1;37m%s\033[0m │ ❤️  Vida: %d/%d │ ⚔️  Kills: %d (%.1f/m) │ ⚡ XP/h: %.0f │ 🎯 Caps: %d\n",
 						st.MapName, st.HP, st.MaxHP, st.Kills, st.KillsPerMin, st.XPPerHour, st.Captures)
 					fmt.Printf("  💰 Ouro: \033[1;33m%s\033[0m (%d gp) │ 💎 Diamantes: %d │ XP: %d/%d (%.1f%%)\n",

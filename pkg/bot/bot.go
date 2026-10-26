@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sort"
 	"sync"
 	"time"
 
@@ -42,7 +43,10 @@ type Bot struct {
 	lastBallBuyTime   time.Time
 	lastGuildBossTime time.Time
 	lastSellTime      time.Time
-	lastLeaderSetTime time.Time
+	lastLeaderSetTime   time.Time
+	lastEvolveCheckTime time.Time
+	lastFillTeamTime    time.Time
+	lastArenaClaimTime  time.Time
 	inventoryLoot     []InventoryItem
 	totalBalls        int
 
@@ -354,6 +358,14 @@ func (b *Bot) updateSnapshot(snap *GameStateData) {
 	b.status.MaxHP = snap.Trainer.MaxHP
 	b.status.Gold = snap.Trainer.Gold
 	b.status.Diamonds = snap.Trainer.Diamonds
+	if snap.Trainer.VipUntil != nil && *snap.Trainer.VipUntil > time.Now().UnixMilli() {
+		b.status.VipActive = true
+		b.status.VipUntil = *snap.Trainer.VipUntil
+	} else {
+		b.status.VipActive = false
+		b.status.VipUntil = 0
+	}
+	b.status.VipExpiringSoon = snap.Trainer.VipExpiringSoon
 	b.status.AutoHuntActive = snap.AutoHunt
 
 	if !b.hasInitial {
@@ -661,16 +673,6 @@ func (b *Bot) tickAutomation(sock *client.SocketClient) {
 		b.mu.Unlock()
 	}
 
-	// 6. Girar roda da sorte se disponível (a cada 60 segundos)
-	if cfg.AutoSpin && time.Since(b.lastSpinTime) > 60*time.Second {
-		b.lastSpinTime = time.Now()
-		_ = sock.SendIntent(SpinWheelIntent{
-			Type:    "spinWheel",
-			WheelID: "daily",
-			Times:   1,
-		})
-	}
-
 	// 7. Auto-compra de Pokébolas se estiver com poucas bolas (< 10) e tiver ouro
 	if b.totalBalls < 10 && b.status.Gold >= 200 && time.Since(b.lastBallBuyTime) > 30*time.Second {
 		b.lastBallBuyTime = time.Now()
@@ -846,3 +848,56 @@ func (b *Bot) SetStrategy(strategy string, targetKills int) {
 	}
 }
 
+
+func (b *Bot) fillTeamFromStorage(currentTeamCount int) {
+	b.mu.RLock()
+	token := b.accessToken
+	sock := b.socket
+	b.mu.RUnlock()
+
+	if token == "" || sock == nil || !sock.IsConnected() {
+		return
+	}
+
+	storage, err := b.apiClient.GetStorage(token)
+	if err != nil {
+		log.Printf("[%s] Falha ao consultar storage para completar equipe: %v", b.config.ID, err)
+		return
+	}
+
+	if len(storage.Box) == 0 {
+		return
+	}
+
+	// Ordena os PokÃ©mons do Box pelo maior nÃ­vel
+	sort.Slice(storage.Box, func(i, j int) bool {
+		return storage.Box[i].Level > storage.Box[j].Level
+	})
+
+	needed := 6 - currentTeamCount
+	pulled := 0
+	for _, p := range storage.Box {
+		if pulled >= needed {
+			break
+		}
+		pName := b.catalog.GetSpeciesName(p.SpeciesID)
+		log.Printf("ðŸ‘¥ [%s] ðŸ“¥ [AUTO-TIME] Retirando %s (Nv. %d) do Box para preencher o Slot %d/6 da equipe...",
+			b.config.ID, pName, p.Level, currentTeamCount+pulled+1)
+		_ = sock.SendIntent(WithdrawPokemonIntent{
+			Type:      "withdrawPokemon",
+			PokemonID: p.PokemonID,
+		})
+		pulled++
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+func (b *Bot) GetAPIClient() *client.APIClient {
+	return b.apiClient
+}
+
+func (b *Bot) GetAccessToken() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.accessToken
+}
